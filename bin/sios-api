@@ -44,7 +44,6 @@ from sios.common import config
 from sios.common import wsgi
 from sios.common import exception
 from sios.openstack.common import log
-import sios.store
 
 
 def fail(returncode, e):
@@ -56,9 +55,6 @@ if __name__ == '__main__':
     try:
         config.parse_args()
         log.setup('sios')
-
-        sios.store.create_stores()
-        sios.store.verify_default_store()
 
         server = wsgi.Server()
         server.start(config.load_paste_app(), default_port=5253)
