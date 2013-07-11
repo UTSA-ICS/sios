@@ -39,8 +39,8 @@ from OpenSSL import crypto
 from oslo.config import cfg
 from webob import exc
 
-from glance.common import exception
-import glance.openstack.common.log as logging
+from sios.common import exception
+import sios.openstack.common.log as logging
 
 CONF = cfg.CONF
 
@@ -48,7 +48,7 @@ LOG = logging.getLogger(__name__)
 
 FEATURE_BLACKLIST = ['content-length', 'content-type', 'x-image-meta-size']
 
-GLANCE_TEST_SOCKET_FD_STR = 'GLANCE_TEST_SOCKET_FD'
+SIOS_TEST_SOCKET_FD_STR = 'SIOS_TEST_SOCKET_FD'
 
 
 def chunkreadable(iter, chunk_size=65536):
@@ -200,7 +200,7 @@ def image_meta_to_http_headers(image_meta):
 
 def add_features_to_http_headers(features, headers):
     """
-    Adds additional headers representing glance features to be enabled.
+    Adds additional headers representing sios features to be enabled.
 
     :param headers: Base set of headers
     :param features: Map of enabled features
@@ -278,7 +278,7 @@ def safe_remove(path):
 
 
 class PrettyTable(object):
-    """Creates an ASCII art table for use in bin/glance
+    """Creates an ASCII art table for use in bin/sios
 
     Example:
 
@@ -456,7 +456,7 @@ class LazyPluggable(object):
                 backend_name = CONF[self.__config_group][self.__pivot]
             if backend_name not in self.__backends:
                 msg = _('Invalid backend: %s') % backend_name
-                raise exception.GlanceException(msg)
+                raise exception.SiosException(msg)
 
             backend = self.__backends[backend_name]
             if isinstance(backend, tuple):
@@ -508,13 +508,13 @@ def validate_key_cert(key_file, cert_file):
 
 
 def get_test_suite_socket():
-    global GLANCE_TEST_SOCKET_FD_STR
-    if GLANCE_TEST_SOCKET_FD_STR in os.environ:
-        fd = int(os.environ[GLANCE_TEST_SOCKET_FD_STR])
+    global SIOS_TEST_SOCKET_FD_STR
+    if SIOS_TEST_SOCKET_FD_STR in os.environ:
+        fd = int(os.environ[SIOS_TEST_SOCKET_FD_STR])
         sock = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
         sock = socket.SocketType(_sock=sock)
         sock.listen(CONF.backlog)
-        del os.environ[GLANCE_TEST_SOCKET_FD_STR]
+        del os.environ[SIOS_TEST_SOCKET_FD_STR]
         os.close(fd)
         return sock
     return None
