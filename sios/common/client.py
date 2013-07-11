@@ -40,9 +40,9 @@ try:
 except ImportError:
     SENDFILE_SUPPORTED = False
 
-from glance.common import auth
-from glance.common import exception, utils
-import glance.openstack.common.log as logging
+from sios.common import auth
+from sios.common import exception, utils
+import sios.openstack.common.log as logging
 
 LOG = logging.getLogger(__name__)
 
@@ -174,19 +174,19 @@ class BaseClient(object):
                          key.
                          If use_ssl is True, and this param is None (the
                          default), then an environ variable
-                         GLANCE_CLIENT_KEY_FILE is looked for. If no such
+                         SIOS_CLIENT_KEY_FILE is looked for. If no such
                          environ variable is found, ClientConnectionError
                          will be raised.
         :param cert_file: Optional PEM-formatted certificate chain file.
                           If use_ssl is True, and this param is None (the
                           default), then an environ variable
-                          GLANCE_CLIENT_CERT_FILE is looked for. If no such
+                          SIOS_CLIENT_CERT_FILE is looked for. If no such
                           environ variable is found, ClientConnectionError
                           will be raised.
         :param ca_file: Optional CA cert file to use in SSL connections
                         If use_ssl is True, and this param is None (the
                         default), then an environ variable
-                        GLANCE_CLIENT_CA_FILE is looked for.
+                        SIOS_CLIENT_CA_FILE is looked for.
         :param insecure: Optional. If set then the server's certificate
                          will not be verified.
         :param configure_via_auth: Optional. Defaults to True. If set, the
@@ -225,11 +225,11 @@ class BaseClient(object):
 
         if self.use_ssl:
             if self.key_file is None:
-                self.key_file = os.environ.get('GLANCE_CLIENT_KEY_FILE')
+                self.key_file = os.environ.get('SIOS_CLIENT_KEY_FILE')
             if self.cert_file is None:
-                self.cert_file = os.environ.get('GLANCE_CLIENT_CERT_FILE')
+                self.cert_file = os.environ.get('SIOS_CLIENT_CERT_FILE')
             if self.ca_file is None:
-                self.ca_file = os.environ.get('GLANCE_CLIENT_CA_FILE')
+                self.ca_file = os.environ.get('SIOS_CLIENT_CA_FILE')
 
             # Check that key_file/cert_file are either both set or both unset
             if self.cert_file is not None and self.key_file is None:
@@ -237,7 +237,7 @@ class BaseClient(object):
                         "and you have supplied a cert, "
                         "however you have failed to supply either a "
                         "key_file parameter or set the "
-                        "GLANCE_CLIENT_KEY_FILE environ variable")
+                        "SIOS_CLIENT_KEY_FILE environ variable")
                 raise exception.ClientConnectionError(msg)
 
             if self.key_file is not None and self.cert_file is None:
@@ -245,7 +245,7 @@ class BaseClient(object):
                         "and you have supplied a key, "
                         "however you have failed to supply either a "
                         "cert_file parameter or set the "
-                        "GLANCE_CLIENT_CERT_FILE environ variable")
+                        "SIOS_CLIENT_CERT_FILE environ variable")
                 raise exception.ClientConnectionError(msg)
 
             if (self.key_file is not None and
@@ -283,12 +283,12 @@ class BaseClient(object):
         """
         Updates the authentication token for this client connection.
         """
-        # FIXME(sirp): Nova image/glance.py currently calls this. Since this
+        # FIXME(sirp): Nova image/sios.py currently calls this. Since this
         # method isn't really doing anything useful[1], we should go ahead and
         # rip it out, first in Nova, then here. Steps:
         #
-        #       1. Change auth_tok in Glance to auth_token
-        #       2. Change image/glance.py in Nova to use client.auth_token
+        #       1. Change auth_tok in Sios to auth_token
+        #       2. Change image/sios.py in Nova to use client.auth_token
         #       3. Remove this method
         #
         # [1] http://mail.python.org/pipermail/tutor/2003-October/025932.html
@@ -401,7 +401,7 @@ class BaseClient(object):
     def _do_request(self, method, url, body, headers):
         """
         Connects to the server and issues a request.  Handles converting
-        any returned HTTP error status codes to OpenStack/Glance exceptions
+        any returned HTTP error status codes to OpenStack/Sios exceptions
         and closing the server connection. Returns the result data, or
         raises an appropriate exception.
 
@@ -523,7 +523,7 @@ class BaseClient(object):
 
     def _seekable(self, body):
         # pipes are not seekable, avoids sendfile() failure on e.g.
-        #   cat /path/to/image | glance add ...
+        #   cat /path/to/image | sios add ...
         # or where add command is launched via popen
         try:
             os.lseek(body.fileno(), 0, os.SEEK_CUR)

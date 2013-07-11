@@ -16,7 +16,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Glance exception subclasses"""
+"""Sios exception subclasses"""
 
 import urlparse
 
@@ -28,9 +28,9 @@ class RedirectException(Exception):
         self.url = urlparse.urlparse(url)
 
 
-class GlanceException(Exception):
+class SiosException(Exception):
     """
-    Base Glance Exception
+    Base Sios Exception
 
     To correctly use this class, inherit from it and define
     a 'message' property. That message will get printf'd
@@ -50,63 +50,63 @@ class GlanceException(Exception):
                 # at least get the core message out if something happened
                 pass
 
-        super(GlanceException, self).__init__(message)
+        super(SiosException, self).__init__(message)
 
 
-class MissingArgumentError(GlanceException):
+class MissingArgumentError(SiosException):
     message = _("Missing required argument.")
 
 
-class MissingCredentialError(GlanceException):
+class MissingCredentialError(SiosException):
     message = _("Missing required credential: %(required)s")
 
 
-class BadAuthStrategy(GlanceException):
+class BadAuthStrategy(SiosException):
     message = _("Incorrect auth strategy, expected \"%(expected)s\" but "
                 "received \"%(received)s\"")
 
 
-class NotFound(GlanceException):
+class NotFound(SiosException):
     message = _("An object with the specified identifier was not found.")
 
 
-class UnknownScheme(GlanceException):
+class UnknownScheme(SiosException):
     message = _("Unknown scheme '%(scheme)s' found in URI")
 
 
-class BadStoreUri(GlanceException):
+class BadStoreUri(SiosException):
     message = _("The Store URI was malformed.")
 
 
-class Duplicate(GlanceException):
+class Duplicate(SiosException):
     message = _("An object with the same identifier already exists.")
 
 
-class StorageFull(GlanceException):
+class StorageFull(SiosException):
     message = _("There is not enough disk space on the image storage media.")
 
 
-class StorageWriteDenied(GlanceException):
+class StorageWriteDenied(SiosException):
     message = _("Permission to write image storage media denied.")
 
 
-class AuthBadRequest(GlanceException):
+class AuthBadRequest(SiosException):
     message = _("Connect error/bad request to Auth service at URL %(url)s.")
 
 
-class AuthUrlNotFound(GlanceException):
+class AuthUrlNotFound(SiosException):
     message = _("Auth service at URL %(url)s not found.")
 
 
-class AuthorizationFailure(GlanceException):
+class AuthorizationFailure(SiosException):
     message = _("Authorization failed.")
 
 
-class NotAuthenticated(GlanceException):
+class NotAuthenticated(SiosException):
     message = _("You are not authenticated.")
 
 
-class Forbidden(GlanceException):
+class Forbidden(SiosException):
     message = _("You are not authorized to complete this action.")
 
 
@@ -123,7 +123,7 @@ class NotAuthorized(Forbidden):
     message = _("You are not authorized to complete this action.")
 
 
-class Invalid(GlanceException):
+class Invalid(SiosException):
     message = _("Data supplied was not valid.")
 
 
@@ -143,29 +143,29 @@ class ReservedProperty(Forbidden):
     message = _("Attribute '%(property)s' is reserved.")
 
 
-class AuthorizationRedirect(GlanceException):
+class AuthorizationRedirect(SiosException):
     message = _("Redirecting to %(uri)s for authorization.")
 
 
-class DatabaseMigrationError(GlanceException):
+class DatabaseMigrationError(SiosException):
     message = _("There was an error migrating the database.")
 
 
-class ClientConnectionError(GlanceException):
+class ClientConnectionError(SiosException):
     message = _("There was an error connecting to a server")
 
 
-class ClientConfigurationError(GlanceException):
+class ClientConfigurationError(SiosException):
     message = _("There was an error configuring the client.")
 
 
-class MultipleChoices(GlanceException):
+class MultipleChoices(SiosException):
     message = _("The request returned a 302 Multiple Choices. This generally "
                 "means that you have not included a version indicator in a "
                 "request URI.\n\nThe body of response returned:\n%(body)s")
 
 
-class LimitExceeded(GlanceException):
+class LimitExceeded(SiosException):
     message = _("The request returned a 413 Request Entity Too Large. This "
                 "generally means that rate limiting or a quota threshold was "
                 "breached.\n\nThe response body:\n%(body)s")
@@ -176,7 +176,7 @@ class LimitExceeded(GlanceException):
         super(LimitExceeded, self).__init__(*args, **kwargs)
 
 
-class ServiceUnavailable(GlanceException):
+class ServiceUnavailable(SiosException):
     message = _("The request returned 503 Service Unavilable. This "
                 "generally occurs on service overload or other transient "
                 "outage.")
@@ -187,86 +187,86 @@ class ServiceUnavailable(GlanceException):
         super(ServiceUnavailable, self).__init__(*args, **kwargs)
 
 
-class ServerError(GlanceException):
+class ServerError(SiosException):
     message = _("The request returned 500 Internal Server Error.")
 
 
-class UnexpectedStatus(GlanceException):
+class UnexpectedStatus(SiosException):
     message = _("The request returned an unexpected status: %(status)s."
                 "\n\nThe response body:\n%(body)s")
 
 
-class InvalidContentType(GlanceException):
+class InvalidContentType(SiosException):
     message = _("Invalid content type %(content_type)s")
 
 
-class BadRegistryConnectionConfiguration(GlanceException):
+class BadRegistryConnectionConfiguration(SiosException):
     message = _("Registry was not configured correctly on API server. "
                 "Reason: %(reason)s")
 
 
-class BadStoreConfiguration(GlanceException):
+class BadStoreConfiguration(SiosException):
     message = _("Store %(store_name)s could not be configured correctly. "
                 "Reason: %(reason)s")
 
 
-class BadDriverConfiguration(GlanceException):
+class BadDriverConfiguration(SiosException):
     message = _("Driver %(driver_name)s could not be configured correctly. "
                 "Reason: %(reason)s")
 
 
-class StoreDeleteNotSupported(GlanceException):
+class StoreDeleteNotSupported(SiosException):
     message = _("Deleting images from this store is not supported.")
 
 
-class StoreAddDisabled(GlanceException):
+class StoreAddDisabled(SiosException):
     message = _("Configuration for store failed. Adding images to this "
                 "store is disabled.")
 
 
-class InvalidNotifierStrategy(GlanceException):
+class InvalidNotifierStrategy(SiosException):
     message = _("'%(strategy)s' is not an available notifier strategy.")
 
 
-class MaxRedirectsExceeded(GlanceException):
+class MaxRedirectsExceeded(SiosException):
     message = _("Maximum redirects (%(redirects)s) was exceeded.")
 
 
-class InvalidRedirect(GlanceException):
+class InvalidRedirect(SiosException):
     message = _("Received invalid HTTP redirect.")
 
 
-class NoServiceEndpoint(GlanceException):
-    message = _("Response from Keystone does not contain a Glance endpoint.")
+class NoServiceEndpoint(SiosException):
+    message = _("Response from Keystone does not contain a Sios endpoint.")
 
 
-class RegionAmbiguity(GlanceException):
+class RegionAmbiguity(SiosException):
     message = _("Multiple 'image' service matches for region %(region)s. This "
                 "generally means that a region is required and you have not "
                 "supplied one.")
 
 
-class WorkerCreationFailure(GlanceException):
+class WorkerCreationFailure(SiosException):
     message = _("Server worker creation failed: %(reason)s.")
 
 
-class SchemaLoadError(GlanceException):
+class SchemaLoadError(SiosException):
     message = _("Unable to load schema: %(reason)s")
 
 
-class InvalidObject(GlanceException):
+class InvalidObject(SiosException):
     message = _("Provided object does not match schema "
                 "'%(schema)s': %(reason)s")
 
 
-class UnsupportedHeaderFeature(GlanceException):
+class UnsupportedHeaderFeature(SiosException):
     message = _("Provided header feature is unsupported: %(feature)s")
 
 
-class InUseByStore(GlanceException):
+class InUseByStore(SiosException):
     message = _("The image cannot be deleted because it is in use through "
-                "the backend store outside of Glance.")
+                "the backend store outside of Sios.")
 
 
-class ImageSizeLimitExceeded(GlanceException):
+class ImageSizeLimitExceeded(SiosException):
     message = _("The provided image is too large.")

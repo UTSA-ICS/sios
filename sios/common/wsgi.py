@@ -40,9 +40,9 @@ import routes.middleware
 import webob.dec
 import webob.exc
 
-from glance.common import exception
-from glance.common import utils
-import glance.openstack.common.log as os_logging
+from sios.common import exception
+from sios.common import utils
+import sios.openstack.common.log as os_logging
 
 
 bind_opts = [

@@ -35,8 +35,8 @@ import urlparse
 
 import httplib2
 
-from glance.common import exception
-import glance.openstack.common.log as logging
+from sios.common import exception
+import sios.openstack.common.log as logging
 
 
 LOG = logging.getLogger(__name__)
@@ -161,7 +161,7 @@ class KeystoneStrategy(BaseStrategy):
         def _management_url(self, resp):
             for url_header in ('x-image-management-url',
                                'x-server-management-url',
-                               'x-glance'):
+                               'x-sios'):
                 try:
                     return resp[url_header]
                 except KeyError as e:
@@ -236,7 +236,7 @@ class KeystoneStrategy(BaseStrategy):
         conn = httplib2.Http()
         conn.force_exception_to_status_code = True
         conn.disable_ssl_certificate_validation = self.insecure
-        headers['User-Agent'] = 'glance-client'
+        headers['User-Agent'] = 'sios-client'
         resp, resp_body = conn.request(url, method, headers=headers, body=body)
         return resp, resp_body
 
