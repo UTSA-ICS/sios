@@ -22,8 +22,6 @@ from sios.common import exception
 from sios.openstack.common import excutils
 from sios.common import utils
 import sios.openstack.common.log as logging
-import sios.registry.client.v1.api as registry
-import sios.store
 
 
 CONF = cfg.CONF

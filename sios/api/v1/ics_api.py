@@ -1,4 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2013 OpenStack Foundation
 # All Rights Reserved.
@@ -42,16 +41,8 @@ from sios.api.v1 import upload_utils
 from sios.common import exception
 from sios.common import utils
 from sios.common import wsgi
-from sios import notifier
 import sios.openstack.common.log as logging
 from sios.openstack.common import strutils
-import sios.registry.client.v1.api as registry
-from sios.store import (get_from_backend,
-                          get_size_from_backend,
-                          safe_delete_from_backend,
-                          schedule_delayed_delete_from_backend,
-                          get_store_from_location,
-                          get_store_from_scheme)
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)

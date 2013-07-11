@@ -19,8 +19,6 @@ import webob.exc
 
 from sios.common import exception
 import sios.openstack.common.log as logging
-import sios.registry.client.v1.api as registry
-import sios.store as store
 
 LOG = logging.getLogger(__name__)
 
