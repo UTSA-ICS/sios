@@ -15,7 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from sios.api.v2 import ics_api
+from sios.api.v1 import ics_api
 from sios.common import wsgi
 
 

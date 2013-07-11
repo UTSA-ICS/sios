@@ -14,9 +14,9 @@
 #    under the License.
 
 
-from glance.openstack.common.gettextutils import _
-from glance.openstack.common import log as logging
-from glance.openstack.common.notifier import rpc_notifier
+from sios.openstack.common.gettextutils import _
+from sios.openstack.common import log as logging
+from sios.openstack.common.notifier import rpc_notifier
 
 LOG = logging.getLogger(__name__)
 

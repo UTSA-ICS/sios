@@ -17,12 +17,12 @@ import uuid
 
 from oslo.config import cfg
 
-from glance.openstack.common import context
-from glance.openstack.common.gettextutils import _
-from glance.openstack.common import importutils
-from glance.openstack.common import jsonutils
-from glance.openstack.common import log as logging
-from glance.openstack.common import timeutils
+from sios.openstack.common import context
+from sios.openstack.common.gettextutils import _
+from sios.openstack.common import importutils
+from sios.openstack.common import jsonutils
+from sios.openstack.common import log as logging
+from sios.openstack.common import timeutils
 
 
 LOG = logging.getLogger(__name__)

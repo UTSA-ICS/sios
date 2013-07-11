@@ -15,8 +15,8 @@
 
 from oslo.config import cfg
 
-from glance.openstack.common import jsonutils
-from glance.openstack.common import log as logging
+from sios.openstack.common import jsonutils
+from sios.openstack.common import log as logging
 
 
 CONF = cfg.CONF
@@ -30,6 +30,6 @@ def notify(_context, message):
                            CONF.default_notification_level)
     priority = priority.lower()
     logger = logging.getLogger(
-        'glance.openstack.common.notification.%s' %
+        'sios.openstack.common.notification.%s' %
         message['event_type'])
     getattr(logger, priority)(jsonutils.dumps(message))
