@@ -24,9 +24,9 @@ class API(wsgi.Router):
     """WSGI router for SIOS v1 API requests."""
 
     def __init__(self, mapper):
-        custom_image_properties = images.load_custom_properties()
+        #custom_image_properties = images.load_custom_properties()
 
-        ics_api_resource = ics_api.create_resource(custom_image_properties)
+        ics_api_resource = ics_api.create_resource()
         mapper.connect('/ics_api/print',
                        controller=ics_api_resource,
                        action='print',
