@@ -14,4 +14,4 @@ To be able to use this service do the following:
 
 To Test USe:
 ============
-curl -i -X GET http://10.245.123.87:5253/v1/ics_api/ics -H 'Content-Type: application/json' -H 'X-Auth-Token:  <ADD A VALID AUTH TOKEN HERE>'
+curl -i -X GET http://10.245.123.87:5253/v1/ics_api/ics -H 'Content-Type: application/json' -H 'X-Auth-Token: [ADD A VALID AUTH TOKEN HERE]'
