@@ -43,9 +43,9 @@ class SiosException(Exception):
             message = self.message
         try:
             message = message % kwargs
-        except Exception as e:
+        except Exception:
             if _FATAL_EXCEPTION_FORMAT_ERRORS:
-                raise e
+                raise
             else:
                 # at least get the core message out if something happened
                 pass
@@ -270,3 +270,7 @@ class InUseByStore(SiosException):
 
 class ImageSizeLimitExceeded(SiosException):
     message = _("The provided image is too large.")
+
+
+class RPCError(SiosException):
+    message = _("%(cls)s exception was raised in the last rpc call: %(val)s")

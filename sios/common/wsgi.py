@@ -69,14 +69,22 @@ socket_opts = [
                                   'server securely.')),
 ]
 
-workers_opt = cfg.IntOpt('workers', default=1,
-                         help=_('The number of child process workers that '
-                                'will be created to service API requests.'))
+eventlet_opts = [
+    cfg.IntOpt('workers', default=1,
+               help=_('The number of child process workers that will be '
+                      'created to service API requests.')),
+    cfg.StrOpt('eventlet_hub', default='poll',
+               help=_('Name of eventlet hub to use. Traditionally, we have '
+                      'only supported \'poll\', however \'selects\' may be '
+                      'appropriate for some platforms. See '
+                      'http://eventlet.net/doc/hubs.html for more details.')),
+]
+
 
 CONF = cfg.CONF
 CONF.register_opts(bind_opts)
 CONF.register_opts(socket_opts)
-CONF.register_opt(workers_opt)
+CONF.register_opts(eventlet_opts)
 
 
 class WritableLogger(object):
@@ -190,12 +198,29 @@ class Server(object):
         :param application: The application to be run in the WSGI server
         :param default_port: Port to bind to if none is specified in conf
         """
+        pgid = os.getpid()
+        try:
+            # NOTE(flaper87): Make sure this process
+            # runs in its own process group.
+            os.setpgid(pgid, pgid)
+        except OSError:
+            # NOTE(flaper87): When running sios-control,
+            # (sios's functional tests, for example)
+            # setpgid fails with EPERM as sios-control
+            # creates a fresh session, of which the newly
+            # launched service becomes the leader (session
+            # leaders may not change process groups)
+            #
+            # Running sios-(api|registry) is safe and
+            # shouldn't raise any error here.
+            pgid = 0
+
         def kill_children(*args):
             """Kills the entire process group."""
             signal.signal(signal.SIGTERM, signal.SIG_IGN)
             signal.signal(signal.SIGINT, signal.SIG_IGN)
             self.running = False
-            os.killpg(0, signal.SIGTERM)
+            os.killpg(pgid, signal.SIGTERM)
 
         def hup(*args):
             """
@@ -207,7 +232,7 @@ class Server(object):
         self.application = application
         self.sock = get_socket(default_port)
 
-        os.umask(027)  # ensure files are created with the correct privileges
+        os.umask(0o27)  # ensure files are created with the correct privileges
         self.logger = os_logging.getLogger('eventlet.wsgi.server')
 
         if CONF.workers == 0:
@@ -288,16 +313,18 @@ class Server(object):
 
         eventlet.wsgi.HttpProtocol.default_request_version = "HTTP/1.0"
         try:
-            eventlet.hubs.use_hub('poll')
+            eventlet.hubs.use_hub(cfg.CONF.eventlet_hub)
         except Exception:
-            msg = _("eventlet 'poll' hub is not available on this platform")
-            raise exception.WorkerCreationFailure(reason=msg)
+            msg = _("eventlet '%s' hub is not available on this platform")
+            raise exception.WorkerCreationFailure(
+                reason=msg % cfg.CONF.eventlet_hub)
         self.pool = self.create_pool()
         try:
             eventlet.wsgi.server(self.sock,
                                  self.application,
                                  log=WritableLogger(self.logger),
-                                 custom_pool=self.pool)
+                                 custom_pool=self.pool,
+                                 debug=False)
         except socket.error as err:
             if err[0] != errno.EINVAL:
                 raise
@@ -307,7 +334,7 @@ class Server(object):
         """Start a WSGI server in a new green thread."""
         self.logger.info(_("Starting single process server"))
         eventlet.wsgi.server(sock, application, custom_pool=self.pool,
-                             log=WritableLogger(self.logger))
+                             log=WritableLogger(self.logger), debug=False)
 
 
 class Middleware(object):
@@ -389,6 +416,19 @@ class Debug(Middleware):
         print
 
 
+class APIMapper(routes.Mapper):
+    """
+    Handle route matching when url is '' because routes.Mapper returns
+    an error in this case.
+    """
+
+    def routematch(self, url=None, environ=None):
+        if url is "":
+            result = self._match("", environ)
+            return result[0], result[1]
+        return routes.Mapper.routematch(self, url, environ)
+
+
 class Router(object):
     """
     WSGI middleware that maps incoming requests to WSGI apps.
@@ -418,13 +458,14 @@ class Router(object):
           # section of the URL.
           mapper.connect(None, "/v1.0/{path_info:.*}", controller=BlogApp())
         """
+        mapper.redirect("", "/")
         self.map = mapper
         self._router = routes.middleware.RoutesMiddleware(self._dispatch,
                                                           self.map)
 
     @classmethod
     def factory(cls, global_conf, **local_conf):
-        return cls(routes.Mapper())
+        return cls(APIMapper())
 
     @webob.dec.wsgify
     def __call__(self, req):
@@ -485,9 +526,13 @@ class JSONRequestDeserializer(object):
 
         return False
 
+    def _sanitizer(self, obj):
+        """Sanitizer method that will be passed to json.loads."""
+        return obj
+
     def from_json(self, datastring):
         try:
-            return json.loads(datastring)
+            return json.loads(datastring, object_hook=self._sanitizer)
         except ValueError:
             msg = _('Malformed JSON in request body.')
             raise webob.exc.HTTPBadRequest(explanation=msg)
@@ -501,13 +546,16 @@ class JSONRequestDeserializer(object):
 
 class JSONResponseSerializer(object):
 
-    def to_json(self, data):
-        def sanitizer(obj):
-            if isinstance(obj, datetime.datetime):
-                return obj.isoformat()
-            return obj
+    def _sanitizer(self, obj):
+        """Sanitizer method that will be passed to json.dumps."""
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        if hasattr(obj, "to_dict"):
+            return obj.to_dict()
+        return obj
 
-        return json.dumps(data, default=sanitizer)
+    def to_json(self, data):
+        return json.dumps(data, default=self._sanitizer)
 
     def default(self, response, result):
         response.content_type = 'application/json'
@@ -531,6 +579,7 @@ class Resource(object):
     may raise a webob.exc exception or return a dict, which will be
     serialized by requested content type.
     """
+
     def __init__(self, controller, deserializer=None, serializer=None):
         """
         :param controller: object that implement methods created by routes lib
