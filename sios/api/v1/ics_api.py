@@ -76,8 +76,8 @@ class Controller(object):
         self.policy = policy.Enforcer()
         self.pool = eventlet.GreenPool(size=1024)
    
-    def printF(self, req):
-	return 'Hello World'
+    def ics(self, req):
+	return 'ICS IS COOOOL!!!'
 
     def _enforce(self, req, action):
         """Authorize an action against our policies"""

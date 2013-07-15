@@ -26,9 +26,9 @@ class API(wsgi.Router):
     def __init__(self, mapper):
 
         ics_api_resource = ics_api.create_resource()
-        mapper.connect('/ics_api/printF',
+        mapper.connect('/ics_api/ics',
                        controller=ics_api_resource,
-                       action='printF',
+                       action='ics',
                        conditions={'method': ['GET']})
 
         super(API, self).__init__(mapper)
