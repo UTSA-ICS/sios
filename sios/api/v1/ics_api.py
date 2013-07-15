@@ -15,7 +15,7 @@
 #    under the License.
 
 """
-/images endpoint for Sios v1 API
+/ics_api endpoint for Sios v1 API
 """
 
 import copy
@@ -34,7 +34,6 @@ from webob import Response
 from sios.api import common
 from sios.api import policy
 import sios.api.v1
-from sios.api.v1 import controller
 from sios.api.v1 import filters
 from sios.api.v1 import upload_utils
 from sios.common import exception
@@ -53,7 +52,7 @@ DISK_FORMATS = ['ami', 'ari', 'aki', 'vhd', 'vmdk', 'raw', 'qcow2', 'vdi',
                 'iso']
 
 
-class Controller(controller.BaseController):
+class Controller(object):
     """
     WSGI controller for images resource in Sios v1 API
 
@@ -76,6 +75,9 @@ class Controller(controller.BaseController):
         self.notifier = notifier.Notifier()
         self.policy = policy.Enforcer()
         self.pool = eventlet.GreenPool(size=1024)
+   
+    def printF(self, req):
+	return 'Hello World'
 
     def _enforce(self, req, action):
         """Authorize an action against our policies"""
