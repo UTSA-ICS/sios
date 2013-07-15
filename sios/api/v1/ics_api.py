@@ -19,7 +19,6 @@
 """
 
 import copy
-
 import eventlet
 from oslo.config import cfg
 from webob.exc import (HTTPError,
@@ -43,6 +42,7 @@ from sios.common import utils
 from sios.common import wsgi
 import sios.openstack.common.log as logging
 from sios.openstack.common import strutils
+from sios import notifier
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -74,7 +74,6 @@ class Controller(controller.BaseController):
 
     def __init__(self):
         self.notifier = notifier.Notifier()
-        registry.configure_registry_client()
         self.policy = policy.Enforcer()
         self.pool = eventlet.GreenPool(size=1024)
 
@@ -111,7 +110,7 @@ class Controller(controller.BaseController):
         self._enforce(req, 'get_images')
         params = self._get_query_params(req)
         try:
-            images = registry.get_images_list(req.context, **params)
+            images = None
         except exception.Invalid as e:
             raise HTTPBadRequest(explanation="%s" % e)
 
@@ -144,7 +143,7 @@ class Controller(controller.BaseController):
         self._enforce(req, 'get_images')
         params = self._get_query_params(req)
         try:
-            images = registry.get_images_detail(req.context, **params)
+            images = None
             # Strip out the Location attribute. Temporary fix for
             # LP Bug #755916. This information is still coming back
             # from the registry, since the API server still needs access
@@ -310,7 +309,7 @@ class Controller(controller.BaseController):
             image_meta['size'] = image_meta.get('size', 0)
 
         try:
-            image_meta = registry.add_image_metadata(req.context, image_meta)
+            image_meta = None
             self.notifier.info("image.create", redact_loc(image_meta))
             return image_meta
         except exception.Duplicate:
@@ -376,8 +375,6 @@ class Controller(controller.BaseController):
 
         image_id = image_meta['id']
         LOG.debug(_("Setting image %s to status 'saving'"), image_id)
-        registry.update_image_metadata(req.context, image_id,
-                                       {'status': 'saving'})
 
         LOG.debug(_("Uploading image data for image %(image_id)s "
                     "to %(scheme)s store"), locals())
@@ -408,9 +405,7 @@ class Controller(controller.BaseController):
         image_meta['status'] = 'active'
 
         try:
-            image_meta_data = registry.update_image_metadata(req.context,
-                                                             image_id,
-                                                             image_meta)
+            image_meta_data = None
             self.notifier.info("image.activate", redact_loc(image_meta_data))
             self.notifier.info("image.update", redact_loc(image_meta_data))
             return image_meta_data
@@ -616,10 +611,7 @@ class Controller(controller.BaseController):
                 image_meta['size'] = self._get_size(req.context, image_meta,
                                                     location)
 
-            image_meta = registry.update_image_metadata(req.context,
-                                                        id,
-                                                        image_meta,
-                                                        purge_props)
+            image_meta = None
 
             if activating:
                 image_meta = self._handle_source(req, id, image_meta,
@@ -695,12 +687,6 @@ class Controller(controller.BaseController):
             status = 'deleted'
 
         try:
-            # Delete the image from the registry first, since we rely on it
-            # for authorization checks.
-            # See https://bugs.launchpad.net/sios/+bug/1065187
-            registry.update_image_metadata(req.context, id, {'status': status})
-            registry.delete_image_metadata(req.context, id)
-
             # The image's location field may be None in the case
             # of a saving or queued image, therefore don't ask a backend
             # to delete the image if the backend doesn't yet store it.
