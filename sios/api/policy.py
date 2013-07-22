@@ -23,7 +23,6 @@ import os.path
 from oslo.config import cfg
 
 from sios.common import exception
-import sios.domain.proxy
 import sios.openstack.common.log as logging
 from sios.openstack.common import policy
 
@@ -43,7 +42,6 @@ CONF.register_opts(policy_opts)
 DEFAULT_RULES = {
     'context_is_admin': policy.RoleCheck('role', 'admin'),
     'default': policy.TrueCheck(),
-    'manage_image_cache': policy.RoleCheck('role', 'admin'),
 }
 
 
@@ -155,116 +153,4 @@ class Enforcer(object):
         return self.check(context, 'context_is_admin', target)
 
 
-class ImageRepoProxy(sios.domain.proxy.Repo):
 
-    def __init__(self, image_repo, context, policy):
-        self.context = context
-        self.policy = policy
-        self.image_repo = image_repo
-        proxy_kwargs = {'context': self.context, 'policy': self.policy}
-        super(ImageRepoProxy, self).__init__(image_repo,
-                                             item_proxy_class=ImageProxy,
-                                             item_proxy_kwargs=proxy_kwargs)
-
-    def get(self, image_id):
-        self.policy.enforce(self.context, 'get_image', {})
-        return super(ImageRepoProxy, self).get(image_id)
-
-    def list(self, *args, **kwargs):
-        self.policy.enforce(self.context, 'get_images', {})
-        return super(ImageRepoProxy, self).list(*args, **kwargs)
-
-    def save(self, image):
-        self.policy.enforce(self.context, 'modify_image', {})
-        return super(ImageRepoProxy, self).save(image)
-
-    def add(self, image):
-        self.policy.enforce(self.context, 'add_image', {})
-        return super(ImageRepoProxy, self).add(image)
-
-
-# TODO(mclaren): we will need to enforce the 'set_image_location'
-# policy once the relevant functionality has been added to  V2
-class ImageProxy(sios.domain.proxy.Image):
-
-    def __init__(self, image, context, policy):
-        self.image = image
-        self.context = context
-        self.policy = policy
-        super(ImageProxy, self).__init__(image)
-
-    @property
-    def visibility(self):
-        return self.image.visibility
-
-    @visibility.setter
-    def visibility(self, value):
-        if value == 'public':
-            self.policy.enforce(self.context, 'publicize_image', {})
-        self.image.visibility = value
-
-    def delete(self):
-        self.policy.enforce(self.context, 'delete_image', {})
-        return self.image.delete()
-
-    def get_data(self, *args, **kwargs):
-        self.policy.enforce(self.context, 'download_image', {})
-        return self.image.get_data(*args, **kwargs)
-
-    def get_member_repo(self, **kwargs):
-        member_repo = self.image.get_member_repo(**kwargs)
-        return ImageMemberRepoProxy(member_repo, self.context, self.policy)
-
-
-class ImageFactoryProxy(sios.domain.proxy.ImageFactory):
-
-    def __init__(self, image_factory, context, policy):
-        self.image_factory = image_factory
-        self.context = context
-        self.policy = policy
-        proxy_kwargs = {'context': self.context, 'policy': self.policy}
-        super(ImageFactoryProxy, self).__init__(image_factory,
-                                                proxy_class=ImageProxy,
-                                                proxy_kwargs=proxy_kwargs)
-
-    def new_image(self, **kwargs):
-        if kwargs.get('visibility') == 'public':
-            self.policy.enforce(self.context, 'publicize_image', {})
-        return super(ImageFactoryProxy, self).new_image(**kwargs)
-
-
-class ImageMemberFactoryProxy(sios.domain.proxy.ImageMembershipFactory):
-
-    def __init__(self, member_factory, context, policy):
-        super(ImageMemberFactoryProxy, self).__init__(
-            member_factory,
-            image_proxy_class=ImageProxy,
-            image_proxy_kwargs={'context': context, 'policy': policy})
-
-
-class ImageMemberRepoProxy(sios.domain.proxy.Repo):
-
-    def __init__(self, member_repo, context, policy):
-        self.member_repo = member_repo
-        self.context = context
-        self.policy = policy
-
-    def add(self, member):
-        self.policy.enforce(self.context, 'add_member', {})
-        return self.member_repo.add(member)
-
-    def get(self, member_id):
-        self.policy.enforce(self.context, 'get_member', {})
-        return self.member_repo.get(member_id)
-
-    def save(self, member):
-        self.policy.enforce(self.context, 'modify_member', {})
-        return self.member_repo.save(member)
-
-    def list(self, *args, **kwargs):
-        self.policy.enforce(self.context, 'get_members', {})
-        return self.member_repo.list(*args, **kwargs)
-
-    def remove(self, member):
-        self.policy.enforce(self.context, 'delete_member', {})
-        return self.member_repo.remove(member)
