@@ -76,8 +76,14 @@ class Controller(object):
         self.policy = policy.Enforcer()
         self.pool = eventlet.GreenPool(size=1024)
    
-    def ics(self, req):
-	return 'ICS IS COOOOL!!!'
+    def my_roles(self, req):
+	return req.context.roles
+
+    def my_tenant(self, req):
+	return req.context.tenant
+
+    def my_service_catalog(self, req):
+	return req.context.service_catalog
 
     def _enforce(self, req, action):
         """Authorize an action against our policies"""
@@ -109,10 +115,10 @@ class Controller(object):
                  'size': <SIZE>}, ...
             ]}
         """
-        self._enforce(req, 'get_images')
+        self._enforce(req, 'get_index')
         params = self._get_query_params(req)
         try:
-            images = None
+            ics = None
         except exception.Invalid as e:
             raise HTTPBadRequest(explanation="%s" % e)
 
@@ -182,9 +188,12 @@ class Controller(object):
         :param req: the Request object coming from the wsgi layer
         :retval a dict of key/value filters
         """
+        print 'The req is'
+        print req.context
         query_filters = {}
         for param in req.params:
-            if param in SUPPORTED_FILTERS or param.startswith('property-'):
+            print 'The PARM IS %s ]' % param
+            if param in SUPPORTED_FILTERS or param.startswith('property-') or param.startwith('X-'):
                 query_filters[param] = req.params.get(param)
                 if not filters.validate(param, query_filters[param]):
                     raise HTTPBadRequest('Bad value passed to filter %s '
@@ -861,7 +870,7 @@ class ImageSerializer(wsgi.JSONResponseSerializer):
 
 
 def create_resource():
-    """Images resource factory method"""
+    """Resource factory method"""
     deserializer = ImageDeserializer()
     serializer = ImageSerializer()
     return wsgi.Resource(Controller(), deserializer, serializer)
