@@ -31,7 +31,6 @@ from webob.exc import (HTTPError,
                        HTTPServiceUnavailable)
 from webob import Response
 
-from sios.api import common
 from sios.api import policy
 import sios.api.v1
 from sios.common import exception
