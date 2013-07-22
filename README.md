@@ -13,6 +13,6 @@ To be able to use this service do the following:
 - Create a user [sios] with password [admin] in the service tenant with 'admin' role
 - Create a service called 'sios' in Keystone
 
-To Test USe:
+To Test Use:
 ============
 curl -i -X GET http://[Your machine's IP address]:5253/v1/ics_api/ics -H 'Content-Type: application/json' -H 'X-Auth-Token: [ADD A VALID AUTH TOKEN HERE]'
