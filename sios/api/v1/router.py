@@ -16,6 +16,7 @@
 #    under the License.
 
 from sios.api.v1 import ics_api
+from sios.api.v1 import pdp
 from sios.common import wsgi
 
 
@@ -29,6 +30,10 @@ class API(wsgi.Router):
         mapper.connect('/ics_api/my_roles',
                        controller=ics_api_resource,
                        action='my_roles',
+                       conditions={'method': ['POST']})
+        mapper.connect('/ics_api/my_roles',
+                       controller=ics_api_resource,
+                       action='my_roles',
                        conditions={'method': ['GET']})
         mapper.connect('/ics_api/my_tenant',
                        controller=ics_api_resource,
@@ -38,5 +43,11 @@ class API(wsgi.Router):
                        controller=ics_api_resource,
                        action='my_service_catalog',
                        conditions={'method': ['GET']})
+
+        pdp_resource = pdp.create_resource()
+        mapper.connect('/pdp/enforce',
+                       controller=pdp_resource,
+                       action='enforce',
+                       conditions={'method': ['POST']})
 
         super(API, self).__init__(mapper)

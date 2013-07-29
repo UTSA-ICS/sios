@@ -20,7 +20,6 @@ import json
 from oslo.config import cfg
 import webob.exc
 
-from sios.api import policy
 from sios.common import wsgi
 import sios.context
 import sios.openstack.common.log as logging
@@ -60,7 +59,6 @@ class BaseContextMiddleware(wsgi.Middleware):
 
 class ContextMiddleware(BaseContextMiddleware):
     def __init__(self, app):
-        self.policy_enforcer = policy.Enforcer()
         super(ContextMiddleware, self).__init__(app)
 
     def process_request(self, req):
@@ -89,7 +87,6 @@ class ContextMiddleware(BaseContextMiddleware):
             'roles': [],
             'is_admin': False,
             'read_only': True,
-            'policy_enforcer': self.policy_enforcer,
         }
         return sios.context.RequestContext(**kwargs)
 
@@ -111,6 +108,8 @@ class ContextMiddleware(BaseContextMiddleware):
                 raise webob.exc.HTTPInternalServerError(
                     _('Invalid service catalog json.'))
 
+        action = req.headers.get('X-Action')
+
         kwargs = {
             'user': req.headers.get('X-User-Id'),
             'tenant': req.headers.get('X-Tenant-Id'),
@@ -119,7 +118,7 @@ class ContextMiddleware(BaseContextMiddleware):
             'auth_tok': req.headers.get('X-Auth-Token', deprecated_token),
             'owner_is_tenant': CONF.owner_is_tenant,
             'service_catalog': service_catalog,
-            'policy_enforcer': self.policy_enforcer,
+            'action': action,
         }
 
         return sios.context.RequestContext(**kwargs)

@@ -15,7 +15,7 @@
 #    under the License.
 
 """
-/ics_api endpoint for Sios v1 API
+/PDP endpoint for Sios v1 API
 """
 
 import copy
@@ -31,6 +31,7 @@ from webob.exc import (HTTPError,
                        HTTPServiceUnavailable)
 from webob import Response
 
+from sios.policy.glance import glance
 import sios.api.v1
 from sios.common import exception
 from sios.common import utils
@@ -41,11 +42,6 @@ from sios import notifier
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
-SUPPORTED_PARAMS = sios.api.v1.SUPPORTED_PARAMS
-SUPPORTED_FILTERS = sios.api.v1.SUPPORTED_FILTERS
-CONTAINER_FORMATS = ['ami', 'ari', 'aki', 'bare', 'ovf']
-DISK_FORMATS = ['ami', 'ari', 'aki', 'vhd', 'vmdk', 'raw', 'qcow2', 'vdi',
-                'iso']
 
 
 class Controller(object):
@@ -60,8 +56,7 @@ class Controller(object):
                               images
         HEAD /images/<ID> -- Return metadata about an image with id <ID>
         GET /images/<ID> -- Return image data for image with id <ID>
-        POST /images -- Store image data and return metadata about the
-                        newly-stored image
+        POST /enforce -- Enforce the Policy Decision
         PUT /images/<ID> -- Update image metadata and/or upload image
                             data for a previously-reserved image
         DELETE /images/<ID> -- Delete the image with id <ID>
@@ -69,19 +64,16 @@ class Controller(object):
 
     def __init__(self):
         self.notifier = notifier.Notifier()
+        self.glance_policy = glance.Enforcer()
         self.pool = eventlet.GreenPool(size=1024)
    
-    def my_roles(self, req):
-	return req.context.roles
-
     def enforce(self, req):
-	return req.context.roles
+        """Authorize an action against our policies"""
+        try:
+            return self.glance_policy.enforce(req.context, req.context.action, {})
+        except exception.Forbidden:
+            return HTTPForbidden()
 
-    def my_tenant(self, req):
-	return req.context.tenant
-
-    def my_service_catalog(self, req):
-	return req.context.service_catalog
 
 class Deserializer(wsgi.JSONRequestDeserializer):
     """Handles deserialization of specific controller method requests."""
