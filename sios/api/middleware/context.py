@@ -109,6 +109,7 @@ class ContextMiddleware(BaseContextMiddleware):
                     _('Invalid service catalog json.'))
 
         action = req.headers.get('X-Action')
+        target = req.headers.get('X-Target')
 
         kwargs = {
             'user': req.headers.get('X-User-Id'),
@@ -119,6 +120,7 @@ class ContextMiddleware(BaseContextMiddleware):
             'owner_is_tenant': CONF.owner_is_tenant,
             'service_catalog': service_catalog,
             'action': action,
+            'target': target,
         }
 
         return sios.context.RequestContext(**kwargs)

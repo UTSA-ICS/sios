@@ -70,9 +70,24 @@ class Controller(object):
     def enforce(self, req):
         """Authorize an action against our policies"""
         try:
-            return self.glance_policy.enforce(req.context, req.context.action, {})
+            print 'The PDP for action [ %s ] is ....................['%req.context.action
+	    print self.glance_policy.enforce(req.context, req.context.action, req.context.target)
+            print ']PDP DONE'
+            return self.glance_policy.enforce(req.context, req.context.action, req.context.target)
+        except exception.Forbidden:
+            print 'The Exception is Forbidden'
+            return False
+
+    def check(self, req):
+        """Authorize an action against our policies"""
+        try:
+            print 'The PDP for action [ %s ] is ....................['%req.context.action
+	    print self.glance_policy.enforce(req.context, req.context.action, req.context.target)
+            print ']PDP DONE'
+            return self.glance_policy.enforce(req.context, req.context.action, req.context.target)
         except exception.Forbidden:
             return HTTPForbidden()
+
 
 
 class Deserializer(wsgi.JSONRequestDeserializer):

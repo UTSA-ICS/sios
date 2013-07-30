@@ -119,7 +119,7 @@ class Enforcer(object):
             'user': context.user,
             'tenant': context.tenant,
         }
-
+        print 'The ROle is %s'%context.roles
         return policy.check(rule, target, credentials, *args, **kwargs)
 
     def enforce(self, context, action, target):

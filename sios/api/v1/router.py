@@ -15,7 +15,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from sios.api.v1 import ics_api
 from sios.api.v1 import pdp
 from sios.common import wsgi
 
@@ -26,25 +25,11 @@ class API(wsgi.Router):
 
     def __init__(self, mapper):
 
-        ics_api_resource = ics_api.create_resource()
-        mapper.connect('/ics_api/my_roles',
-                       controller=ics_api_resource,
-                       action='my_roles',
-                       conditions={'method': ['POST']})
-        mapper.connect('/ics_api/my_roles',
-                       controller=ics_api_resource,
-                       action='my_roles',
-                       conditions={'method': ['GET']})
-        mapper.connect('/ics_api/my_tenant',
-                       controller=ics_api_resource,
-                       action='my_tenant',
-                       conditions={'method': ['GET']})
-        mapper.connect('/ics_api/my_service_catalog',
-                       controller=ics_api_resource,
-                       action='my_service_catalog',
-                       conditions={'method': ['GET']})
-
         pdp_resource = pdp.create_resource()
+        mapper.connect('/pdp/check',
+                       controller=pdp_resource,
+                       action='check',
+                       conditions={'method': ['POST']})
         mapper.connect('/pdp/enforce',
                        controller=pdp_resource,
                        action='enforce',

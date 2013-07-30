@@ -27,7 +27,8 @@ class RequestContext(object):
 
     def __init__(self, auth_tok=None, user=None, tenant=None, roles=None,
                  is_admin=False, read_only=False, show_deleted=False,
-                 owner_is_tenant=True, service_catalog=None, action=None):
+                 owner_is_tenant=True, service_catalog=None, action=None,
+		 target=None):
         self.auth_tok = auth_tok
         self.user = user
         self.tenant = tenant
@@ -39,6 +40,7 @@ class RequestContext(object):
         self.service_catalog = service_catalog
         self.is_admin = is_admin
         self.action = action
+        self.target = target
 
         if not hasattr(local.store, 'context'):
             self.update_store()
