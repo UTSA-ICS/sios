@@ -67,7 +67,7 @@ class Controller(object):
         self.glance_policy = glance.Enforcer()
         self.pool = eventlet.GreenPool(size=1024)
    
-    def enforce(self, req):
+    def enforce_glance(self, req):
         """Authorize an action against our policies"""
         try:
             print 'The PDP for action [ %s ] is ....................['%req.context.action
@@ -78,7 +78,7 @@ class Controller(object):
             print 'The Exception is Forbidden'
             return False
 
-    def check(self, req):
+    def check_glance(self, req):
         """Authorize an action against our policies"""
         try:
             print 'The PDP for action [ %s ] is ....................['%req.context.action

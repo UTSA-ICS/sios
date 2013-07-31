@@ -26,13 +26,13 @@ class API(wsgi.Router):
     def __init__(self, mapper):
 
         pdp_resource = pdp.create_resource()
-        mapper.connect('/pdp/check',
+        mapper.connect('/pdp/check_glance',
                        controller=pdp_resource,
-                       action='check',
+                       action='check_glance',
                        conditions={'method': ['POST']})
-        mapper.connect('/pdp/enforce',
+        mapper.connect('/pdp/enforce_glance',
                        controller=pdp_resource,
-                       action='enforce',
+                       action='enforce_glance',
                        conditions={'method': ['POST']})
 
         super(API, self).__init__(mapper)
