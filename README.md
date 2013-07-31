@@ -15,8 +15,6 @@ To be able to use this service do the following:
 
 To Test Use:
 ============
-- curl -i -X GET http://[Your machine's IP address]:5253/v1/ics_api/my_roles -H 'Content-Type: application/json' -H 'X-Auth-Token: [ADD A VALID AUTH TOKEN HERE]'
+- curl -i -X GET http://[Your machine's IP address]:5253/v1/pdp/enforce -H 'Content-Type: application/json' -H 'X-Auth-Token: [ADD A VALID AUTH TOKEN HERE]'
 
-- curl -i -X GET http://[Your machine's IP address]:5253/v1/ics_api/my_tenant -H 'Content-Type: application/json' -H 'X-Auth-Token: [ADD A VALID AUTH TOKEN HERE]'
-
-- curl -i -X GET http://[Your machine's IP address]:5253/v1/ics_api/my_service_catalog -H 'Content-Type: application/json' -H 'X-Auth-Token: [ADD A VALID AUTH TOKEN HERE]'
+- curl -i -X GET http://[Your machine's IP address]:5253/v1/pdp/check -H 'Content-Type: application/json' -H 'X-Auth-Token: [ADD A VALID AUTH TOKEN HERE]'
