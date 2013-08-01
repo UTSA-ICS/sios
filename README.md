@@ -12,8 +12,9 @@ To be able to use this service do the following:
 - Create a directory called /var/cache/sios and give it 777 permission (chmod 777 /var/cache/sios)
 - Create a user [sios] with password [admin] in the service tenant with 'admin' role
 - Create a service called 'sios' in Keystone
-- Copy /opt/stack/glance/glance/api/policy.py to sios/sios/policy/glance/glance.py
-- Copy /opt/stack/nova/nova/api/policy.py to sios/sios/policy/nova/nova.py
+- Copy raw code from address https://github.com/fpatwa/nova/blob/master/glance/policy.py to /opt/stack/glance/glance/api/policy.py 
+- Copy raw code from address https://github.com/fpatwa/nova/blob/master/nova/policy.py to /opt/stack/nova/nova/policy.py
+
 
 To Test Use:
 ============
