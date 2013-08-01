@@ -29,7 +29,7 @@ from sios.openstack.common import policy
 
 LOG = logging.getLogger(__name__)
 
-policy_opts = [
+policy_opts_glance = [
     cfg.StrOpt('policy_file', default='policy.json',
                help=_('The location of the policy file.')),
     cfg.StrOpt('policy_default_rule', default='default',
@@ -37,7 +37,7 @@ policy_opts = [
 ]
 
 CONF = cfg.CONF
-CONF.register_opts(policy_opts)
+CONF.register_opts(policy_opts_glance)
 
 
 DEFAULT_RULES = {
