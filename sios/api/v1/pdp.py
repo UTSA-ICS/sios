@@ -58,7 +58,7 @@ class Controller(object):
     def __init__(self):
         self.notifier = notifier.Notifier()
         self.policy_glance = glance.Enforcer()
-        self.policy_nova = nova.Enforcer()
+        self.policy_nova = nova
         self.pool = eventlet.GreenPool(size=1024)
    
     """
