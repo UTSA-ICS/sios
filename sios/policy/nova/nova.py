@@ -29,7 +29,7 @@ from sios.common import utils
 
 policy_opts_nova = [
     cfg.StrOpt('policy_file_nova',
-               default='policy.json',
+               default='policy_nova.json',
                help=_('JSON file representing policy')),
     cfg.StrOpt('policy_default_rule_nova',
                default='default',
@@ -60,6 +60,7 @@ def init():
             _POLICY_PATH = CONF.find_file(_POLICY_PATH)
         if not _POLICY_PATH:
             raise exception.ConfigNotFound(path=CONF.policy_file_nova)
+    print 'DANG READ%%%%%%%%%%%%%%%%%%%%%%%%%%'
     utils.read_cached_file(_POLICY_PATH, _POLICY_CACHE,
                            reload_func=_set_rules)
 
@@ -91,15 +92,18 @@ def enforce(context, action, target, do_raise=True):
            authorized, and the exact value False if not authorized and
            do_raise is False.
     """
+    print 'CALLING POLICY CHECK NOW##################### 1'
     init()
+    print 'CALLING POLICY CHECK NOW##################### 2'
 
     credentials = context.to_dict()
+    print 'CALLING POLICY CHECK NOW##################### 3'
 
     # Add the exception arguments if asked to do a raise
     extra = {}
     if do_raise:
         extra.update(exc=exception.PolicyNotAuthorized, action=action)
-
+    print 'CALLING POLICY CHECK NOW#####################'
     return policy.check(action, target, credentials, **extra)
 
 
