@@ -36,8 +36,8 @@ policy_opts_glance = [
                help=_('The default policy to use.')),
 ]
 
-CONF = cfg.CONF
-CONF.register_opts(policy_opts_glance)
+CONF_GLANCE = cfg.CONF
+CONF_GLANCE.register_opts(policy_opts_glance)
 
 
 DEFAULT_RULES = {
@@ -51,7 +51,7 @@ class Enforcer(object):
     """Responsible for loading and enforcing rules"""
 
     def __init__(self):
-        self.default_rule = CONF.policy_default_rule
+        self.default_rule = CONF_GLANCE.policy_default_rule
         self.policy_path = self._find_policy_file()
         self.policy_file_mtime = None
         self.policy_file_contents = None
@@ -79,7 +79,7 @@ class Enforcer(object):
     @staticmethod
     def _find_policy_file():
         """Locate the policy json data file"""
-        policy_file = CONF.find_file(CONF.policy_file)
+        policy_file = CONF_GLANCE.find_file(CONF_GLANCE.policy_file)
         if policy_file:
             return policy_file
         else:

@@ -27,7 +27,7 @@ from sios.openstack.common import policy
 from sios.common import utils
 
 
-policy_opts = [
+policy_opts_nova = [
     cfg.StrOpt('policy_file',
                default='policy.json',
                help=_('JSON file representing policy')),
@@ -37,7 +37,7 @@ policy_opts = [
     ]
 
 CONF = cfg.CONF
-CONF.register_opts(policy_opts)
+CONF.register_opts(policy_opts_nova)
 
 _POLICY_PATH = None
 _POLICY_CACHE = {}
