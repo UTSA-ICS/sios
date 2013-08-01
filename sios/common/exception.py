@@ -274,3 +274,7 @@ class ImageSizeLimitExceeded(SiosException):
 
 class RPCError(SiosException):
     message = _("%(cls)s exception was raised in the last rpc call: %(val)s")
+
+
+class ConfigNotFound(SiosException):
+    message = _("Configuration file not found")
