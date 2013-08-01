@@ -30,15 +30,15 @@ from webob.exc import (HTTPError,
                        HTTPInternalServerError,
                        HTTPServiceUnavailable)
 from webob import Response
-
 from sios.policy.glance import glance
+from sios.policy.nova import nova
 import sios.api.v1
 from sios.common import exception
 from sios.common import utils
 from sios.common import wsgi
-import sios.openstack.common.log as logging
 from sios.openstack.common import strutils
 from sios import notifier
+import sios.openstack.common.log as logging
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -46,48 +46,62 @@ LOG = logging.getLogger(__name__)
 
 class Controller(object):
     """
-    WSGI controller for images resource in Sios v1 API
+    WSGI controller for Policy Decision Point in Sios v1 API
 
-    The images resource API is a RESTful web service for image data. The API
+    The PDP resource API is a RESTful web service for Policy Decisions. The API
     is as follows::
 
-        GET /images -- Returns a set of brief metadata about images
-        GET /images/detail -- Returns a set of detailed metadata about
-                              images
-        HEAD /images/<ID> -- Return metadata about an image with id <ID>
-        GET /images/<ID> -- Return image data for image with id <ID>
-        POST /enforce -- Enforce the Policy Decision
-        PUT /images/<ID> -- Update image metadata and/or upload image
-                            data for a previously-reserved image
-        DELETE /images/<ID> -- Delete the image with id <ID>
+        POST /check -- check the Policy Decision
+        POST /enforce -- check the Policy Decision to be enforced
     """
 
     def __init__(self):
         self.notifier = notifier.Notifier()
-        self.glance_policy = glance.Enforcer()
+        self.policy_glance = glance.Enforcer()
+        self.policy_nova = nova.Enforcer()
         self.pool = eventlet.GreenPool(size=1024)
    
+    """
+    PDP for glance OpenStack Service
+    """
     def enforce_glance(self, req):
         """Authorize an action against our policies"""
         try:
-            print 'The PDP for action [ %s ] is ....................['%req.context.action
-	    print self.glance_policy.enforce(req.context, req.context.action, req.context.target)
-            print ']PDP DONE'
-            return self.glance_policy.enforce(req.context, req.context.action, req.context.target)
+	    LOG.debug(_('Evaluating Policy decision for action [%s]') % req.context.action)
+            return self.policy_glance.enforce(req.context, req.context.action, req.context.target)
         except exception.Forbidden:
-            print 'The Exception is Forbidden'
+	    LOG.debug(_('Forbidden Exception Raised for action [%s]. Return False as the policy decision') % req.context.action)
             return False
 
     def check_glance(self, req):
         """Authorize an action against our policies"""
         try:
-            print 'The PDP for action [ %s ] is ....................['%req.context.action
-	    print self.glance_policy.enforce(req.context, req.context.action, req.context.target)
-            print ']PDP DONE'
-            return self.glance_policy.enforce(req.context, req.context.action, req.context.target)
-        except exception.Forbidden:
-            return HTTPForbidden()
+	    LOG.debug(_('Evaluating Policy decision for action [%s]') % req.context.action)
+            return self.policy_glance.enforce(req.context, req.context.action, req.context.target)
+        except exception:
+	    LOG.debug(_('Exception Raised for action [%s]. Return False as the policy decision') % req.context.action)
+            return False
 
+    """
+    PDP for nova OpenStack Service
+    """
+    def enforce_nova(self, req):
+        """Authorize an action against our policies"""
+        try:
+	    LOG.debug(_('Evaluating Policy decision for action [%s]') % req.context.action)
+            return self.policy_nova.enforce(req.context, req.context.action, req.context.target)
+        except exception.Forbidden:
+	    LOG.debug(_('Forbidden Exception Raised for action [%s]. Return False as the policy decision') % req.context.action)
+            return False
+
+    def check_nova(self, req):
+        """Authorize an action against our policies"""
+        try:
+	    LOG.debug(_('Evaluating Policy decision for action [%s]') % req.context.action)
+            return self.policy_nova.enforce(req.context, req.context.action, req.context.target)
+        except exception:
+	    LOG.debug(_('Exception Raised for action [%s]. Return False as the policy decision') % req.context.action)
+            return False
 
 
 class Deserializer(wsgi.JSONRequestDeserializer):
