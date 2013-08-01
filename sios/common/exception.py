@@ -278,3 +278,6 @@ class RPCError(SiosException):
 
 class ConfigNotFound(SiosException):
     message = _("Configuration file not found")
+
+class PolicyNotAuthorized(SiosException):
+    message = _("Policy Not Authorized")
