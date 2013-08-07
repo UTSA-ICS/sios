@@ -37,7 +37,6 @@ from sios.common import exception
 from sios.common import utils
 from sios.common import wsgi
 from sios.openstack.common import strutils
-from sios import notifier
 import sios.openstack.common.log as logging
 
 CONF = cfg.CONF
@@ -56,7 +55,6 @@ class Controller(object):
     """
 
     def __init__(self):
-        self.notifier = notifier.Notifier()
         self.policy_glance = glance.Enforcer()
         self.policy_nova = nova
         self.pool = eventlet.GreenPool(size=1024)
@@ -121,7 +119,7 @@ class Serializer(wsgi.JSONResponseSerializer):
     """Handles serialization of specific controller method responses."""
 
     def __init__(self):
-        self.notifier = notifier.Notifier()
+        self.notifier = None
 
     def meta(self, response, result):
        return response
