@@ -15,6 +15,10 @@ To be able to use this service do the following:
 - Copy raw code from address https://github.com/fpatwa/nova/blob/master/glance/policy.py to /opt/stack/glance/glance/api/policy.py 
 - Copy raw code from address https://github.com/fpatwa/nova/blob/master/nova/policy.py to /opt/stack/nova/nova/policy.py
 
+To start SIOS service:
+Run the following command:
+
+cd /opt/stack/sios; /opt/stack/sios/bin/sios-api --config-file=/etc/sios/sios-api.conf || touch "/opt/stack/status/stack/sios-api.failure"
 
 To Test Use:
 ============
