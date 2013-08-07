@@ -68,18 +68,24 @@ class Controller(object):
         """Authorize an action against our policies"""
         try:
 	    LOG.debug(_('Evaluating Policy decision for action [%s]') % req.context.action)
-            return self.policy_glance.enforce(req.context, req.context.action, req.context.target)
-        except exception.Forbidden:
-	    LOG.debug(_('Forbidden Exception Raised for action [%s]. Return False as the policy decision') % req.context.action)
+            pdp_decision = self.policy_glance.enforce(req.context, req.context.action, req.context.target)
+	    LOG.debug(_('The Policy decision for action [%s] is [%s]') % (req.context.action, pdp_decision))
+   	    return pdp_decision
+        except:
+	    LOG.debug(_('Exception Raised for action [%s]') % req.context.action)
+	    LOG.debug(_('The Policy decision for action [%s] is [False]') % req.context.action)
             return False
 
     def check_glance(self, req):
         """Authorize an action against our policies"""
         try:
 	    LOG.debug(_('Evaluating Policy decision for action [%s]') % req.context.action)
-            return self.policy_glance.enforce(req.context, req.context.action, req.context.target)
+            pdp_decision = self.policy_glance.check(req.context, req.context.action, req.context.target)
+	    LOG.debug(_('The Policy decision for action [%s] is [%s]') % (req.context.action, pdp_decision))
+   	    return pdp_decision
         except exception:
-	    LOG.debug(_('Exception Raised for action [%s]. Return False as the policy decision') % req.context.action)
+	    LOG.debug(_('Exception Raised for action [%s]') % req.context.action)
+	    LOG.debug(_('The Policy decision for action [%s] is [False]') % req.context.action)
             return False
 
     """
@@ -89,20 +95,13 @@ class Controller(object):
         """Authorize an action against our policies"""
         try:
 	    LOG.debug(_('Evaluating Policy decision for action [%s]') % req.context.action)
-            return self.policy_nova.enforce(req.context, req.context.action, req.context.target)
-        except exception.Forbidden:
-	    LOG.debug(_('Forbidden Exception Raised for action [%s]. Return False as the policy decision') % req.context.action)
+            pdp_decision =  self.policy_nova.enforce(req.context, req.context.action, req.context.target)
+	    LOG.debug(_('The Policy decision for action [%s] is [%s]') % (req.context.action, pdp_decision))
+	    return pdp_decision
+        except:
+	    LOG.debug(_('Exception Raised for action [%s]') % req.context.action)
+	    LOG.debug(_('The Policy decision for action [%s] is [False]') % req.context.action)
             return False
-
-    def check_nova(self, req):
-        """Authorize an action against our policies"""
-        try:
-	    LOG.debug(_('Evaluating Policy decision for action [%s]') % req.context.action)
-            return self.policy_nova.enforce(req.context, req.context.action, req.context.target)
-        except exception:
-	    LOG.debug(_('Exception Raised for action [%s]. Return False as the policy decision') % req.context.action)
-            return False
-
 
 class Deserializer(wsgi.JSONRequestDeserializer):
     """Handles deserialization of specific controller method requests."""
