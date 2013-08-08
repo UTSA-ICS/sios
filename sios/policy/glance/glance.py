@@ -30,9 +30,9 @@ from sios.openstack.common import policy
 LOG = logging.getLogger(__name__)
 
 policy_opts_glance = [
-    cfg.StrOpt('policy_file', default='policy.json',
+    cfg.StrOpt('policy_file_glance', default='policy_glance.json',
                help=_('The location of the policy file.')),
-    cfg.StrOpt('policy_default_rule', default='default',
+    cfg.StrOpt('policy_default_rule_glance', default='default',
                help=_('The default policy to use.')),
 ]
 
@@ -51,7 +51,7 @@ class Enforcer(object):
     """Responsible for loading and enforcing rules"""
 
     def __init__(self):
-        self.default_rule = CONF_GLANCE.policy_default_rule
+        self.default_rule = CONF_GLANCE.policy_default_rule_glance
         self.policy_path = self._find_policy_file()
         self.policy_file_mtime = None
         self.policy_file_contents = None
@@ -79,7 +79,7 @@ class Enforcer(object):
     @staticmethod
     def _find_policy_file():
         """Locate the policy json data file"""
-        policy_file = CONF_GLANCE.find_file(CONF_GLANCE.policy_file)
+        policy_file = CONF_GLANCE.find_file(CONF_GLANCE.policy_file_glance)
         if policy_file:
             return policy_file
         else:

@@ -36,8 +36,8 @@ policy_opts_nova = [
                help=_('Rule checked when requested rule is not found')),
     ]
 
-CONF = cfg.CONF
-CONF.register_opts(policy_opts_nova)
+CONF_NOVA = cfg.CONF
+CONF_NOVA.register_opts(policy_opts_nova)
 
 _POLICY_PATH = None
 _POLICY_CACHE = {}
@@ -55,17 +55,17 @@ def init():
     global _POLICY_PATH
     global _POLICY_CACHE
     if not _POLICY_PATH:
-        _POLICY_PATH = CONF.policy_file_nova
+        _POLICY_PATH = CONF_NOVA.policy_file_nova
         if not os.path.exists(_POLICY_PATH):
-            _POLICY_PATH = CONF.find_file(_POLICY_PATH)
+            _POLICY_PATH = CONF_NOVA.find_file(_POLICY_PATH)
         if not _POLICY_PATH:
-            raise exception.ConfigNotFound(path=CONF.policy_file_nova)
+            raise exception.ConfigNotFound(path=CONF_NOVA.policy_file_nova)
     utils.read_cached_file(_POLICY_PATH, _POLICY_CACHE,
                            reload_func=_set_rules)
 
 
 def _set_rules(data):
-    default_rule = CONF.policy_default_rule_nova
+    default_rule = CONF_NOVA.policy_default_rule_nova
     policy.set_rules(policy.Rules.load_json(data, default_rule))
 
 
