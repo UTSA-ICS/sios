@@ -182,7 +182,6 @@ def check(rule, target, creds, exc=None, *args, **kwargs):
     if exc and result is False:
         raise exc(*args, **kwargs)
 
-    print 'The Result is [%s]'%result
     return result
 
 

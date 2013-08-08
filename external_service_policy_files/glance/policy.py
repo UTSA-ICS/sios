@@ -256,12 +256,6 @@ class Enforcer(object):
         path = self.auth_admin_prefix + path
 
         response, body = self._http_request(auth_host, auth_port, method, path, **kwargs)
-	print '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
- 	print response
-	print '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
-	print '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
- 	print body
-	print '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
         try:
             data = jsonutils.loads(body)
         except ValueError:
@@ -288,13 +282,9 @@ class Enforcer(object):
            :param object: Dictionary representing the object of the action.
            :returns: A non-False value if access is allowed.
         """
-	print 'CONTEXT........................'
-        print context.auth_tok
         if (context.auth_tok == None):
 	  return False
         headers = {'X-Auth-Token': context.auth_tok, 'X-Action': action, 'X-Target': target}
-	print 'HEARDSSSSSSSSSSSSSSSSSSS'
-        print headers
         response, data = self._json_request(self.sios_auth_host, self.sios_auth_port, 'POST',
                                             '/v1/pdp/check_glance', additional_headers=headers)
 	return data
@@ -309,12 +299,8 @@ class Enforcer(object):
            :returns: A non-False value if access is allowed.
         """
         headers = {'X-Auth-Token': context.auth_tok, 'X-Action': action, 'X-Target': target}
-	print 'ENFORCE.............................'
-        print headers
         response, data = self._json_request(self.sios_auth_host, self.sios_auth_port, 'POST',
                                             '/v1/pdp/enforce_glance', additional_headers=headers)
-	print 'DATA.............................'
-        print data
 	if (data == False):
 	  raise exception.Forbidden
         else:

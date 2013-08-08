@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
     
-"""Policy Engine For Glance"""
+"""Policy Engine For Nova"""
 import datetime
 import httplib
 import json
@@ -306,10 +306,10 @@ class IsAdminCheck(policy.Check):
 def enforce(context, action, target, do_raise=True):
         """Verifies that the action is valid on the target in this context.
 
-           :param context: Glance request context
+           :param context: Nova request context
            :param action: String representing the action to be checked
            :param object: Dictionary representing the object of the action.
-           :raises: `glance.common.exception.Forbidden`
+           :raises: `nova.common.exception.PolicyNotAuthorized`
            :returns: A non-False value if access is allowed.
         """
 
