@@ -22,11 +22,9 @@ wget -O /opt/stack/glance/glance/api/policy.py https://raw.github.com/fpatwa/sio
 wget -O /opt/stack/nova/nova/policy.py https://raw.github.com/fpatwa/sios/master/external_service_policy_files/nova/policy.py<br>
 7.) To start the SIOS service run the following command:<br>
 cd /opt/stack/sios; /opt/stack/sios/bin/sios-api --config-file=/etc/sios/sios-api.conf || touch "/opt/stack/status/stack/sios-api.failure"<br>
+8.) Restart nova api and glance api services (from screen)<br>
 
-To Test Use:
-============
-- curl -i -X GET http://[Your machine's IP address]:5253/v1/pdp/enforce_glance -H 'Content-Type: application/json' -H 'X-Auth-Token: [ADD A VALID AUTH TOKEN HERE]'
-
-- curl -i -X GET http://[Your machine's IP address]:5253/v1/pdp/enforce_nova -H 'Content-Type: application/json' -H 'X-Auth-Token: [ADD A VALID AUTH TOKEN HERE]'
-
-- curl -i -X GET http://[Your machine's IP address]:5253/v1/pdp/check_glance -H 'Content-Type: application/json' -H 'X-Auth-Token: [ADD A VALID AUTH TOKEN HERE]'
+To Test Usage:
+==============
+- Run nova commands (e.g. nova list)
+- Run glance commands (e.g glance image-list)
