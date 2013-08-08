@@ -1,11 +1,14 @@
 sios
 ====
 
-SIOS service for Openstack
+SIOS PDP service for Openstack
 
-Write a new service that simulates communications with Keystone 
-Authenticate itself with Keystone
-Mapping request to local request 
+This service will act as a Policy Decision Point (PDP) for any OpenStack service.<br>
+A OpenStack service's Policy Enforcement engine will make a REST call to SIOS PDP service for a Policy Decision.<br>
+The SIOS PDP service will always respond with a 'True' of 'False' as a result of the Policy Query.<br>
+In addition to the standard OpenStack HTTP headers, the follwing two HTTP headers are required by SIOS PDP api:<br>
+1. 'X-Action'<br>
+2. 'X-Target'
 
 To be able to use this service do the following:<br>
 1.) Copy sios/etc to /etc/sios<br>
