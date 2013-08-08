@@ -12,6 +12,7 @@ In addition to the standard OpenStack HTTP headers, the follwing two HTTP header
 
 To be able to use this service do the following:<br>
 1.) Copy sios/etc to /etc/sios<br>
+sudo cp /opt/stack/sios/etc/* /etc/sios/.<br>
 2.) Create a directory called /var/cache/sios and give it 777 permission (chmod 777 /var/cache/sios)<br>
 3.) Create a user [sios] with password [admin] in the service tenant with 'admin' role<br>
 4.) Create a service called 'sios' in Keystone<br>
