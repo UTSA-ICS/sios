@@ -10,7 +10,7 @@ In addition to the standard OpenStack HTTP headers, the follwing two HTTP header
 1. 'X-Action'<br>
 2. 'X-Target'
 
-First you will need to download the sios project:
+First you will need to download the sios project:<br>
 a.) cd /opt/stack<br>
 b.) git clone https://github.com/UTSA-ICS/sios.git<br>
 c.) sudo mkdir /etc/sios/<br>
