@@ -26,7 +26,7 @@ import webob.exc
 import os.path
 import traceback
     
-from oslo.config import cfg
+from oslo_config import cfg
 
 
 import os.path
@@ -36,8 +36,8 @@ from nova import exception
 from nova.openstack.common import policy
 from nova import utils
 
-from nova.openstack.common import jsonutils
-from nova.openstack.common import timeutils
+from oslo_serialization import jsonutils
+from oslo_utils import timeutils
 
 LOG = logging.getLogger(__name__)
 
