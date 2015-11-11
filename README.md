@@ -18,7 +18,9 @@ c.) sudo mkdir /etc/sios/<br>
 To be able to use this service do the following:<br>
 1.) Copy sios/etc to /etc/sios<br>
 sudo cp /opt/stack/sios/etc/* /etc/sios/.<br>
-2.) Create a directory called /var/cache/sios and give it 777 permission (chmod 777 /var/cache/sios)<br>
+2.) Create a directory called /var/cache/sios and give it 777 permission<br>
+sudo mkdir /var/cache/sios
+sudo chmod 777 /var/cache/sios
 3.) Create a user [sios] with password [admin] in the service tenant with 'admin' role<br>
 4.) Create a service called 'sios' in Keystone<br>
 5.) Update the policy.py file for glance service to use sios PDP api for Policy Decisions:<br>
