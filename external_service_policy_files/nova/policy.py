@@ -26,7 +26,7 @@ import webob.exc
 import os.path
 import traceback
     
-from oslo.config import cfg
+from oslo_config import cfg
 
 
 import os.path
@@ -36,8 +36,8 @@ from nova import exception
 from nova.openstack.common import policy
 from nova import utils
 
-from nova.openstack.common import jsonutils
-from nova.openstack.common import timeutils
+from oslo_serialization import jsonutils
+from oslo_utils import timeutils
 
 LOG = logging.getLogger(__name__)
 
@@ -65,19 +65,97 @@ opts = [
 CONF = cfg.CONF
 CONF.register_opts(opts, group='authtoken')
 
-_POLICY_PATH = None
-_POLICY_CACHE = {}
+_ENFORCER = None
 
 sios_auth_host = CONF.authtoken['sios_auth_host']
 sios_auth_port = CONF.authtoken['sios_auth_port']
 
 def reset():
-    global _POLICY_PATH
-    global _POLICY_CACHE
-    _POLICY_PATH = None
-    _POLICY_CACHE = {}
-    policy.reset()
+    global _ENFORCER
+    if _ENFORCER:
+        _ENFORCER.clear()
+        _ENFORCER = None
 
+def init(policy_file=None, rules=None, default_rule=None, use_conf=True):
+    """Init an Enforcer class.
+
+       :param policy_file: Custom policy file to use, if none is specified,
+                           `CONF.policy_file` will be used.
+       :param rules: Default dictionary / Rules to use. It will be
+                     considered just in the first instantiation.
+       :param default_rule: Default rule to use, CONF.default_rule will
+                            be used if none is specified.
+       :param use_conf: Whether to load rules from config file.
+    """
+
+    global _ENFORCER
+    if not _ENFORCER:
+        _ENFORCER = policy.Enforcer(policy_file=policy_file,
+                                    rules=rules,
+                                    default_rule=default_rule,
+                                    use_conf=use_conf)
+
+
+def set_rules(rules, overwrite=True, use_conf=False):
+    """Set rules based on the provided dict of rules.
+
+       :param rules: New rules to use. It should be an instance of dict.
+       :param overwrite: Whether to overwrite current rules or update them
+                         with the new rules.
+       :param use_conf: Whether to reload rules from config file.
+    """
+
+    init(use_conf=False)
+    _ENFORCER.set_rules(rules, overwrite, use_conf)
+
+def get_rules():
+    if _ENFORCER:
+        return _ENFORCER.rules
+   
+def check_is_admin(context):
+    """
+    Whether or not roles contains 'admin' role according to policy setting.
+    """
+    init()
+    #the target is user-self
+    credentials = context.to_dict()
+    target = credentials
+    return _ENFORCER.enforce('context_is_admin', target, credentials)
+
+@policy.register('is_admin')
+class IsAdminCheck(policy.Check):
+    """An explicit check for is_admin."""
+
+    def __init__(self, kind, match):
+        """Initialize the check."""
+
+        self.expected = (match.lower() == 'true')
+
+        super(IsAdminCheck, self).__init__(kind, str(self.expected))
+
+    def __call__(self, target, creds):
+        """Determine whether is_admin matches the requested value."""
+
+        return creds['is_admin'] == self.expected
+
+def enforce(context, action, target, do_raise=True):
+        """Verifies that the action is valid on the target in this context.
+
+           :param context: Nova request context
+           :param action: String representing the action to be checked
+           :param object: Dictionary representing the object of the action.
+           :raises: `nova.common.exception.PolicyNotAuthorized`
+           :returns: A non-False value if access is allowed.
+        """
+
+        headers = {'X-Auth-Token': context.auth_token, 'X-Action': action, 'X-Target': target}
+	req = RESTConnect()
+        response, data = req._json_request(sios_auth_host, sios_auth_port, 'POST', 
+	                                    '/v1/pdp/enforce_nova', additional_headers=headers)
+        if (data == False):
+          raise exception.PolicyNotAuthorized
+        else:
+          return data
 
 class RESTConnect(object):
     def __init__(self):
@@ -277,47 +355,4 @@ class RESTConnect(object):
                 data = {}
     
             return response, data
-    
-def check_is_admin(context):
-    """
-    Whether or not roles contains 'admin' role according to policy setting.
-    """
-    #the target is user-self
-    credentials = context.to_dict()
-    target = credentials
-    return policy.check('context_is_admin', target, credentials)
-
-@policy.register('is_admin')
-class IsAdminCheck(policy.Check):
-    """An explicit check for is_admin."""
-
-    def __init__(self, kind, match):
-        """Initialize the check."""
-
-        self.expected = (match.lower() == 'true')
-
-        super(IsAdminCheck, self).__init__(kind, str(self.expected))
-
-    def __call__(self, target, creds):
-        """Determine whether is_admin matches the requested value."""
-
-        return creds['is_admin'] == self.expected
-
-def enforce(context, action, target, do_raise=True):
-        """Verifies that the action is valid on the target in this context.
-
-           :param context: Nova request context
-           :param action: String representing the action to be checked
-           :param object: Dictionary representing the object of the action.
-           :raises: `nova.common.exception.PolicyNotAuthorized`
-           :returns: A non-False value if access is allowed.
-        """
-
-        headers = {'X-Auth-Token': context.auth_token, 'X-Action': action, 'X-Target': target}
-	req = RESTConnect()
-        response, data = req._json_request(sios_auth_host, sios_auth_port, 'POST', 
-	                                    '/v1/pdp/enforce_nova', additional_headers=headers)
-        if (data == False):
-          raise exception.PolicyNotAuthorized
-        else:
-          return data
+ 
