@@ -28,12 +28,13 @@ import webob.exc
 import os.path
 import traceback
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 from glance.common import exception
-import glance.openstack.common.log as logging
-from glance.openstack.common import jsonutils
-from glance.openstack.common import timeutils
+from oslo_log import log as logging
+
+from oslo_serialization import jsonutils
+from oslo_utils import timeutils
 
 LOG = logging.getLogger(__name__)
 

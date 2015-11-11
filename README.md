@@ -18,12 +18,21 @@ c.) sudo mkdir /etc/sios/<br>
 To be able to use this service do the following:<br>
 1.) Copy sios/etc to /etc/sios<br>
 sudo cp /opt/stack/sios/etc/* /etc/sios/.<br>
-2.) Create a directory called /var/cache/sios and give it 777 permission (chmod 777 /var/cache/sios)<br>
+2.) Create a directory called /var/cache/sios and give it 777 permission<br>
+sudo mkdir /var/cache/sios<br>
+sudo chmod 777 /var/cache/sios<br>
 3.) Create a user [sios] with password [admin] in the service tenant with 'admin' role<br>
+keystone user-create --name sios --pass admin --enabled true<br>
+keystone user-role-add --user sios --role admin --tenant service<br>
 4.) Create a service called 'sios' in Keystone<br>
+keystone service-create --type pdp --name sios --description "PIP, PAP and PDP"<br>
 5.) Update the policy.py file for glance service to use sios PDP api for Policy Decisions:<br>
+--- Make a backup of the glance policy file before doing this ---<br>
+cp /opt/stack/glance/glance/api/policy.py /opt/stack/glance/glance/api/glance_policy.py<br>
 wget -O /opt/stack/glance/glance/api/policy.py https://raw.github.com/fpatwa/sios/master/external_service_policy_files/glance/policy.py<br>
 6.) Update the policy.py file for nova service to use sios PDP api for Policy Decisions:<br>
+--- Make a backup of the nova policy file before doing this ---<br>
+cp /opt/stack/nova/nova/policy.py /opt/stack/nova/nova/nova_policy.py<br>
 wget -O /opt/stack/nova/nova/policy.py https://raw.github.com/fpatwa/sios/master/external_service_policy_files/nova/policy.py<br>
 7.) To start the SIOS service run the following command:<br>
 cd /opt/stack/sios; /opt/stack/sios/bin/sios-api --config-file=/etc/sios/sios-api.conf || touch "/opt/stack/status/stack/sios-api.failure"<br>
