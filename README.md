@@ -27,14 +27,11 @@ keystone user-role-add --user sios --role admin --tenant service<br>
 4.) Create a service called 'sios' in Keystone<br>
 keystone service-create --type pdp --name sios --description "PIP, PAP and PDP"<br>
 5.) Update the policy.py file for glance service to use sios PDP api for Policy Decisions:<br>
---- Make a backup of the glance policy file before doing this ---<br>
-cp /opt/stack/glance/glance/api/policy.py /opt/stack/glance/glance/api/glance_policy.py<br>
 wget -O /opt/stack/glance/glance/api/policy.py https://raw.github.com/fpatwa/sios/master/external_service_policy_files/glance/policy.py<br>
 6.) Update the policy.py file for nova service to use sios PDP api for Policy Decisions:<br>
---- Make a backup of the nova policy file before doing this ---<br>
-cp /opt/stack/nova/nova/policy.py /opt/stack/nova/nova/nova_policy.py<br>
 wget -O /opt/stack/nova/nova/policy.py https://raw.github.com/fpatwa/sios/master/external_service_policy_files/nova/policy.py<br>
-7.) To start the SIOS service run the following command:<br>
+7.) To start the SIOS service run the following commands:<br>
+cd /opt/stack; sudo pip install -e sios<br>
 cd /opt/stack/sios; /opt/stack/sios/bin/sios-api --config-file=/etc/sios/sios-api.conf || touch "/opt/stack/status/stack/sios-api.failure"<br>
 8.) Restart nova api and glance api services (from screen)<br>
 
