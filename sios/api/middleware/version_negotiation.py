@@ -1,6 +1,4 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
-# Copyright 2011 OpenStack LLC.
+# Copyright 2011 OpenStack Foundation
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -21,15 +19,18 @@ and/or Accept headers and attempts to negotiate an API controller to
 return
 """
 
-from oslo.config import cfg
+from oslo_config import cfg
+from oslo_log import log as logging
 
 from sios.api import versions
 from sios.common import wsgi
-import sios.openstack.common.log as logging
+from sios import i18n
 
 CONF = cfg.CONF
 
 LOG = logging.getLogger(__name__)
+_ = i18n._
+_LW = i18n._LW
 
 
 class VersionNegotiationFilter(wsgi.Middleware):
@@ -46,30 +47,30 @@ class VersionNegotiationFilter(wsgi.Middleware):
         LOG.debug(msg % args)
 
         # If the request is for /versions, just return the versions container
-        #TODO(bcwaldon): deprecate this behavior
+        # TODO(bcwaldon): deprecate this behavior
         if req.path_info_peek() == "versions":
             return self.versions_app
 
         accept = str(req.accept)
         if accept.startswith('application/vnd.openstack.images-'):
-            LOG.debug(_("Using media-type versioning"))
+            LOG.debug("Using media-type versioning")
             token_loc = len('application/vnd.openstack.images-')
             req_version = accept[token_loc:]
         else:
-            LOG.debug(_("Using url versioning"))
+            LOG.debug("Using url versioning")
             # Remove version in url so it doesn't conflict later
             req_version = self._pop_path_info(req)
 
         try:
             version = self._match_version_string(req_version)
         except ValueError:
-            LOG.debug(_("Unknown version. Returning version choices."))
+            LOG.warn(_LW("Unknown version. Returning version choices."))
             return self.versions_app
 
         req.environ['api.version'] = version
         req.path_info = ''.join(('/v', str(version), req.path_info))
-        LOG.debug(_("Matched version: v%d"), version)
-        LOG.debug('new uri %s' % req.path_info)
+        LOG.debug("Matched version: v%d", version)
+        LOG.debug('new path %s', req.path_info)
         return None
 
     def _match_version_string(self, subject):
@@ -83,7 +84,7 @@ class VersionNegotiationFilter(wsgi.Middleware):
         """
         if subject in ('v1', 'v1.0', 'v1.1') and CONF.enable_v1_api:
             major_version = 1
-        elif subject in ('v2', 'v2.0', 'v2.1') and CONF.enable_v2_api:
+        elif subject in ('v2', 'v2.0', 'v2.1', 'v2.2') and CONF.enable_v2_api:
             major_version = 2
         else:
             raise ValueError()

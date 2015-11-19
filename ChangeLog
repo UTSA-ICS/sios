@@ -1,0 +1,84 @@
+CHANGES
+=======
+
+* Updates for Kilo
+* Added osprofiler
+* Updated location of oslo packages
+* Updated location of utils in oslo libraries
+* Update README.md
+* Update README.md
+* Update README.md
+* Update README.md
+* Update README.md
+* Update README.md
+* Update README.md
+* Update README.md
+* Update README.md
+* Added sudo copy command
+* Updated variable names to be glance and nova specific
+* Removed debug statements and unused files
+* Update README.md
+* removed debugging print statement
+* Formatting update
+* Updated instructions for updating the policy file for glance and nova services
+* Added policy files for glance and nova
+* Removed notifier code - not needed
+* Delete sios.sh
+* Update README.md
+* Updated policy files for glance and nova
+* Updated PDP to catch any exceptions and return False as a result
+* Fixes for nova policy
+* Update README.md
+* Delete .pdp.py.swp
+* Removed Enforcer for nova policy
+* update nova
+* Delete .glance.py.swp
+* Delete .nova.py.swp
+* update nova glance
+* Update nova and glance policy file
+* Update README
+* Cleaned up code and added nova policy
+* Add anonther exception
+* Exception Updated for Nova
+* add nova.py into sios/policy
+* Updated to make calls glance specific
+* Update README.md
+* Glance policy can now enforce true/false from sios
+* Added PDP for glance
+* removed obsolete files
+* removed unneeded code
+* Update README.md
+* Update README.md
+* Updated api commands
+* Update README.md
+* Update README.md
+* Update README.md
+* FIxed IP address for keystone
+* Working Copy
+* Working Copy
+* Working Copy
+* Updates for Security As a Service
+* Removed unused registry and several other updates
+* updates
+* updates
+* initial commit
+* initial checkin
+* initial
+* initial check in
+* initial check in
+* initial login
+* initial commit
+* Updated name to sios
+* Updated glance to sios
+* initial commit
+* Update file
+* Remove obsolete directory
+* change
+* ss
+* try
+* directory add
+* New file
+* add test
+* Second try
+* Initial Commit
+* Initial commit

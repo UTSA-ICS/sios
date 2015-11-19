@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2012 OpenStack Foundation.
 # All Rights Reserved.
 #
@@ -16,15 +14,27 @@
 #    under the License.
 
 import httplib
-import json
 
-from oslo.config import cfg
+from oslo.serialization import jsonutils
+from oslo_config import cfg
 import webob.dec
 
 from sios.common import wsgi
+from sios import i18n
 
+_ = i18n._
+
+versions_opts = [
+    cfg.StrOpt('public_endpoint', default=None,
+               help=_('Public url to use for versions endpoint. The default '
+                      'is None, which will use the request\'s host_url '
+                      'attribute to populate the URL base. If Glance is '
+                      'operating behind a proxy, you will want to change '
+                      'this to represent the proxy\'s URL.')),
+]
 
 CONF = cfg.CONF
+CONF.register_opts(versions_opts)
 
 
 class Controller(object):
@@ -34,13 +44,14 @@ class Controller(object):
     def index(self, req):
         """Respond to a request for all OpenStack API versions."""
         def build_version_object(version, path, status):
+            url = CONF.public_endpoint or req.host_url
             return {
                 'id': 'v%s' % version,
                 'status': status,
                 'links': [
                     {
                         'rel': 'self',
-                        'href': '%s/%s/' % (req.host_url, path),
+                        'href': '%s/%s/' % (url, path),
                     },
                 ],
             }
@@ -48,14 +59,14 @@ class Controller(object):
         version_objs = []
         if CONF.enable_v1_api:
             version_objs.extend([
-                build_version_object(1.1, 'v1', 'CURRENT'),
+                build_version_object(1.1, 'v1', 'SUPPORTED'),
                 build_version_object(1.0, 'v1', 'SUPPORTED'),
             ])
 
         response = webob.Response(request=req,
                                   status=httplib.MULTIPLE_CHOICES,
                                   content_type='application/json')
-        response.body = json.dumps(dict(versions=version_objs))
+        response.body = jsonutils.dumps(dict(versions=version_objs))
         return response
 
     @webob.dec.wsgify(RequestClass=wsgi.Request)

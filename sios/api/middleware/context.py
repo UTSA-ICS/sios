@@ -1,6 +1,4 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
-# Copyright 2011-2012 OpenStack LLC.
+# Copyright 2011-2012 OpenStack Foundation
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,15 +13,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
-
-from oslo.config import cfg
+from oslo.serialization import jsonutils
+from oslo_config import cfg
+from oslo_log import log as logging
 import webob.exc
 
+from sios.api import policy
 from sios.common import wsgi
 import sios.context
-import sios.openstack.common.log as logging
+from sios import i18n
 
+_ = i18n._
 
 context_opts = [
     cfg.BoolOpt('owner_is_tenant', default=True,
@@ -59,6 +59,7 @@ class BaseContextMiddleware(wsgi.Middleware):
 
 class ContextMiddleware(BaseContextMiddleware):
     def __init__(self, app):
+        self.policy_enforcer = policy.Enforcer()
         super(ContextMiddleware, self).__init__(app)
 
     def process_request(self, req):
@@ -87,38 +88,40 @@ class ContextMiddleware(BaseContextMiddleware):
             'roles': [],
             'is_admin': False,
             'read_only': True,
+            'policy_enforcer': self.policy_enforcer,
         }
         return sios.context.RequestContext(**kwargs)
 
     def _get_authenticated_context(self, req):
-        #NOTE(bcwaldon): X-Roles is a csv string, but we need to parse
+        # NOTE(bcwaldon): X-Roles is a csv string, but we need to parse
         # it into a list to be useful
         roles_header = req.headers.get('X-Roles', '')
         roles = [r.strip().lower() for r in roles_header.split(',')]
 
-        #NOTE(bcwaldon): This header is deprecated in favor of X-Auth-Token
+        # NOTE(bcwaldon): This header is deprecated in favor of X-Auth-Token
         deprecated_token = req.headers.get('X-Storage-Token')
 
         service_catalog = None
         if req.headers.get('X-Service-Catalog') is not None:
             try:
                 catalog_header = req.headers.get('X-Service-Catalog')
-                service_catalog = json.loads(catalog_header)
+                service_catalog = jsonutils.loads(catalog_header)
             except ValueError:
                 raise webob.exc.HTTPInternalServerError(
                     _('Invalid service catalog json.'))
 
-        action = req.headers.get('X-Action')
-        target = req.headers.get('X-Target')
+	action = req.headers.get('X-Action')
+	target = req.headers.get('X-Target')
 
         kwargs = {
             'user': req.headers.get('X-User-Id'),
             'tenant': req.headers.get('X-Tenant-Id'),
             'roles': roles,
             'is_admin': CONF.admin_role.strip().lower() in roles,
-            'auth_tok': req.headers.get('X-Auth-Token', deprecated_token),
+            'auth_token': req.headers.get('X-Auth-Token', deprecated_token),
             'owner_is_tenant': CONF.owner_is_tenant,
             'service_catalog': service_catalog,
+            'policy_enforcer': self.policy_enforcer,
             'action': action,
             'target': target,
         }

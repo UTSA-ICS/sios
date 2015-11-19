@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2013 Red Hat, Inc.
 # All Rights Reserved.
 #
@@ -21,10 +19,13 @@ Use gzip compression if the client accepts it.
 
 import re
 
+from oslo_log import log as logging
+
 from sios.common import wsgi
-import sios.openstack.common.log as logging
+from sios import i18n
 
 LOG = logging.getLogger(__name__)
+_LI = i18n._LI
 
 
 class GzipMiddleware(wsgi.Middleware):
@@ -32,7 +33,7 @@ class GzipMiddleware(wsgi.Middleware):
     re_zip = re.compile(r'\bgzip\b')
 
     def __init__(self, app):
-        LOG.info(_("Initialized gzip middleware"))
+        LOG.info(_LI("Initialized gzip middleware"))
         super(GzipMiddleware, self).__init__(app)
 
     def process_response(self, response):

@@ -20,7 +20,7 @@
 
 import copy
 import eventlet
-from oslo.config import cfg
+from oslo_config import cfg
 from webob.exc import (HTTPError,
                        HTTPNotFound,
                        HTTPConflict,
@@ -36,8 +36,9 @@ import sios.api.v1
 from sios.common import exception
 from sios.common import utils
 from sios.common import wsgi
-from sios.openstack.common import strutils
-import sios.openstack.common.log as logging
+from oslo_utils import strutils
+import oslo_log.log as logging
+from sios.i18n import _
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)

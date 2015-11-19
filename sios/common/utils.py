@@ -1,7 +1,7 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
+# Copyright 2014 SoftLayer Technologies, Inc.
+# Copyright 2015 Mirantis, Inc
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -31,25 +31,47 @@ from eventlet.green import socket
 import functools
 import os
 import platform
+import re
+import stevedore
 import subprocess
 import sys
 import uuid
 
 from OpenSSL import crypto
-from oslo.config import cfg
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_utils import encodeutils
+from oslo_utils import excutils
+from oslo_utils import netutils
+from oslo_utils import strutils
+import six
 from webob import exc
 
 from sios.common import exception
-import sios.openstack.common.log as logging
-from sios.openstack.common import strutils
+from sios import i18n
 
 CONF = cfg.CONF
 
 LOG = logging.getLogger(__name__)
+_ = i18n._
+_LE = i18n._LE
 
 FEATURE_BLACKLIST = ['content-length', 'content-type', 'x-image-meta-size']
 
-SIOS_TEST_SOCKET_FD_STR = 'SIOS_TEST_SOCKET_FD'
+# Whitelist of v1 API headers of form x-image-meta-xxx
+IMAGE_META_HEADERS = ['x-image-meta-location', 'x-image-meta-size',
+                      'x-image-meta-is_public', 'x-image-meta-disk_format',
+                      'x-image-meta-container_format', 'x-image-meta-name',
+                      'x-image-meta-status', 'x-image-meta-copy_from',
+                      'x-image-meta-uri', 'x-image-meta-checksum',
+                      'x-image-meta-created_at', 'x-image-meta-updated_at',
+                      'x-image-meta-deleted_at', 'x-image-meta-min_ram',
+                      'x-image-meta-min_disk', 'x-image-meta-owner',
+                      'x-image-meta-store', 'x-image-meta-id',
+                      'x-image-meta-protected', 'x-image-meta-deleted',
+                      'x-image-meta-virtual_size']
+
+GLANCE_TEST_SOCKET_FD_STR = 'GLANCE_TEST_SOCKET_FD'
 
 
 def chunkreadable(iter, chunk_size=65536):
@@ -90,9 +112,9 @@ def cooperative_iter(iter):
             sleep(0)
             yield chunk
     except Exception as err:
-        msg = _("Error: cooperative_iter exception %s") % err
-        LOG.error(msg)
-        raise
+        with excutils.save_and_reraise_exception():
+            msg = _LE("Error: cooperative_iter exception %s") % err
+            LOG.error(msg)
 
 
 def cooperative_read(fd):
@@ -107,6 +129,9 @@ def cooperative_read(fd):
         sleep(0)
         return result
     return readfn
+
+
+MAX_COOP_READER_BUFFER_SIZE = 134217728  # 128M seems like a sane buffer limit
 
 
 class CooperativeReader(object):
@@ -130,19 +155,68 @@ class CooperativeReader(object):
         # is more straightforward
         if hasattr(fd, 'read'):
             self.read = cooperative_read(fd)
+        else:
+            self.iterator = None
+            self.buffer = ''
+            self.position = 0
 
     def read(self, length=None):
-        """Return the next chunk of the underlying iterator.
+        """Return the requested amount of bytes, fetching the next chunk of
+        the underlying iterator when needed.
 
         This is replaced with cooperative_read in __init__ if the underlying
         fd already supports read().
         """
-        if self.iterator is None:
-            self.iterator = self.__iter__()
-        try:
-            return self.iterator.next()
-        except StopIteration:
-            return ''
+        if length is None:
+            if len(self.buffer) - self.position > 0:
+                # if no length specified but some data exists in buffer,
+                # return that data and clear the buffer
+                result = self.buffer[self.position:]
+                self.buffer = ''
+                self.position = 0
+                return str(result)
+            else:
+                # otherwise read the next chunk from the underlying iterator
+                # and return it as a whole. Reset the buffer, as subsequent
+                # calls may specify the length
+                try:
+                    if self.iterator is None:
+                        self.iterator = self.__iter__()
+                    return self.iterator.next()
+                except StopIteration:
+                    return ''
+                finally:
+                    self.buffer = ''
+                    self.position = 0
+        else:
+            result = bytearray()
+            while len(result) < length:
+                if self.position < len(self.buffer):
+                    to_read = length - len(result)
+                    chunk = self.buffer[self.position:self.position + to_read]
+                    result.extend(chunk)
+
+                    # This check is here to prevent potential OOM issues if
+                    # this code is called with unreasonably high values of read
+                    # size. Currently it is only called from the HTTP clients
+                    # of Glance backend stores, which use httplib for data
+                    # streaming, which has readsize hardcoded to 8K, so this
+                    # check should never fire. Regardless it still worths to
+                    # make the check, as the code may be reused somewhere else.
+                    if len(result) >= MAX_COOP_READER_BUFFER_SIZE:
+                        raise exception.LimitExceeded()
+                    self.position += len(chunk)
+                else:
+                    try:
+                        if self.iterator is None:
+                            self.iterator = self.__iter__()
+                        self.buffer = self.iterator.next()
+                        self.position = 0
+                    except StopIteration:
+                        self.buffer = ''
+                        self.position = 0
+                        return str(result)
+            return str(result)
 
     def __iter__(self):
         return cooperative_iter(self.fd.__iter__())
@@ -193,25 +267,10 @@ def image_meta_to_http_headers(image_meta):
                 for pk, pv in v.items():
                     if pv is not None:
                         headers["x-image-meta-property-%s"
-                                % pk.lower()] = unicode(pv)
+                                % pk.lower()] = six.text_type(pv)
             else:
-                headers["x-image-meta-%s" % k.lower()] = unicode(v)
+                headers["x-image-meta-%s" % k.lower()] = six.text_type(v)
     return headers
-
-
-def add_features_to_http_headers(features, headers):
-    """
-    Adds additional headers representing sios features to be enabled.
-
-    :param headers: Base set of headers
-    :param features: Map of enabled features
-    """
-    if features:
-        for k, v in features.items():
-            if k.lower() in FEATURE_BLACKLIST:
-                raise exception.UnsupportedHeaderFeature(feature=k)
-            if v is not None:
-                headers[k.lower()] = unicode(v)
 
 
 def get_image_meta_from_headers(response):
@@ -237,17 +296,60 @@ def get_image_meta_from_headers(response):
             properties[field_name] = value or None
         elif key.startswith('x-image-meta-'):
             field_name = key[len('x-image-meta-'):].replace('-', '_')
+            if 'x-image-meta-' + field_name not in IMAGE_META_HEADERS:
+                msg = _("Bad header: %(header_name)s") % {'header_name': key}
+                raise exc.HTTPBadRequest(msg, content_type="text/plain")
             result[field_name] = value or None
     result['properties'] = properties
-    if 'size' in result:
-        try:
-            result['size'] = int(result['size'])
-        except ValueError:
-            raise exception.Invalid
+
+    for key, nullable in [('size', False), ('min_disk', False),
+                          ('min_ram', False), ('virtual_size', True)]:
+        if key in result:
+            try:
+                result[key] = int(result[key])
+            except ValueError:
+                if nullable and result[key] == str(None):
+                    result[key] = None
+                else:
+                    extra = (_("Cannot convert image %(key)s '%(value)s' "
+                               "to an integer.")
+                             % {'key': key, 'value': result[key]})
+                    raise exception.InvalidParameterValue(value=result[key],
+                                                          param=key,
+                                                          extra_msg=extra)
+            if result[key] < 0 and result[key] is not None:
+                extra = (_("Image %(key)s must be >= 0 "
+                           "('%(value)s' specified).")
+                         % {'key': key, 'value': result[key]})
+                raise exception.InvalidParameterValue(value=result[key],
+                                                      param=key,
+                                                      extra_msg=extra)
+
     for key in ('is_public', 'deleted', 'protected'):
         if key in result:
             result[key] = strutils.bool_from_string(result[key])
     return result
+
+
+def create_mashup_dict(image_meta):
+    """
+    Returns a dictionary-like mashup of the image core properties
+    and the image custom properties from given image metadata.
+
+    :param image_meta: metadata of image with core and custom properties
+    """
+
+    def get_items():
+        for key, value in six.iteritems(image_meta):
+            if isinstance(value, dict):
+                for subkey, subvalue in six.iteritems(
+                        create_mashup_dict(value)):
+                    if subkey not in image_meta:
+                        yield subkey, subvalue
+            else:
+                yield key, value
+
+    return dict(get_items())
 
 
 def safe_mkdirs(path):
@@ -341,7 +443,7 @@ def get_terminal_size():
             height_width = struct.unpack('hh', fcntl.ioctl(sys.stderr.fileno(),
                                          termios.TIOCGWINSZ,
                                          struct.pack('HH', 0, 0)))
-        except:
+        except Exception:
             pass
 
         if not height_width:
@@ -353,18 +455,19 @@ def get_terminal_size():
                 result = p.communicate()
                 if p.returncode == 0:
                     return tuple(int(x) for x in result[0].split())
-            except:
+            except Exception:
                 pass
 
         return height_width
 
     def _get_terminal_size_win32():
         try:
-            from ctypes import windll, create_string_buffer
+            from ctypes import create_string_buffer
+            from ctypes import windll
             handle = windll.kernel32.GetStdHandle(-12)
             csbi = create_string_buffer(22)
             res = windll.kernel32.GetConsoleScreenBufferInfo(handle, csbi)
-        except:
+        except Exception:
             return None
         if res:
             import struct
@@ -400,7 +503,7 @@ def mutating(func):
     @functools.wraps(func)
     def wrapped(self, req, *args, **kwargs):
         if req.context.read_only:
-            msg = _("Read-only access")
+            msg = "Read-only access"
             LOG.debug(msg)
             raise exc.HTTPForbidden(msg, request=req,
                                     content_type="text/plain")
@@ -409,10 +512,10 @@ def mutating(func):
 
 
 def setup_remote_pydev_debug(host, port):
-    error_msg = ('Error setting up the debug environment.  Verify that the'
-                 ' option pydev_worker_debug_port is pointing to a valid '
-                 'hostname or IP on which a pydev server is listening on'
-                 ' the port indicated by pydev_worker_debug_port.')
+    error_msg = _LE('Error setting up the debug environment. Verify that the'
+                    ' option pydev_worker_debug_host is pointing to a valid '
+                    'hostname or IP on which a pydev server is listening on'
+                    ' the port indicated by pydev_worker_debug_port.')
 
     try:
         try:
@@ -425,108 +528,212 @@ def setup_remote_pydev_debug(host, port):
                         stdoutToServer=True,
                         stderrToServer=True)
         return True
-    except:
-        LOG.exception(error_msg)
-        raise
-
-
-class LazyPluggable(object):
-    """A pluggable backend loaded lazily based on some value."""
-
-    def __init__(self, pivot, config_group=None, **backends):
-        self.__backends = backends
-        self.__pivot = pivot
-        self.__backend = None
-        self.__config_group = config_group
-
-    def __get_backend(self):
-        if not self.__backend:
-            if self.__config_group is None:
-                backend_name = CONF[self.__pivot]
-            else:
-                backend_name = CONF[self.__config_group][self.__pivot]
-            if backend_name not in self.__backends:
-                msg = _('Invalid backend: %s') % backend_name
-                raise exception.SiosException(msg)
-
-            backend = self.__backends[backend_name]
-            if isinstance(backend, tuple):
-                name = backend[0]
-                fromlist = backend[1]
-            else:
-                name = backend
-                fromlist = backend
-
-            self.__backend = __import__(name, None, None, fromlist)
-        return self.__backend
-
-    def __getattr__(self, key):
-        backend = self.__get_backend()
-        return getattr(backend, key)
+    except Exception:
+        with excutils.save_and_reraise_exception():
+            LOG.exception(error_msg)
 
 
 def validate_key_cert(key_file, cert_file):
     try:
         error_key_name = "private key"
         error_filename = key_file
-        key_str = open(key_file, "r").read()
+        with open(key_file, 'r') as keyfile:
+            key_str = keyfile.read()
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, key_str)
 
-        error_key_name = "certficate"
+        error_key_name = "certificate"
         error_filename = cert_file
-        cert_str = open(cert_file, "r").read()
+        with open(cert_file, 'r') as certfile:
+            cert_str = certfile.read()
         cert = crypto.load_certificate(crypto.FILETYPE_PEM, cert_str)
-    except IOError, ioe:
-        raise RuntimeError(_("There is a problem with your %s "
-                             "%s.  Please verify it.  Error: %s"
-                             % (error_key_name, error_filename, ioe)))
-    except crypto.Error, ce:
-        raise RuntimeError(_("There is a problem with your %s "
-                             "%s.  Please verify it. OpenSSL error: %s"
-                             % (error_key_name, error_filename, ce)))
+    except IOError as ioe:
+        raise RuntimeError(_("There is a problem with your %(error_key_name)s "
+                             "%(error_filename)s.  Please verify it."
+                             "  Error: %(ioe)s") %
+                           {'error_key_name': error_key_name,
+                            'error_filename': error_filename,
+                            'ioe': ioe})
+    except crypto.Error as ce:
+        raise RuntimeError(_("There is a problem with your %(error_key_name)s "
+                             "%(error_filename)s.  Please verify it. OpenSSL"
+                             " error: %(ce)s") %
+                           {'error_key_name': error_key_name,
+                            'error_filename': error_filename,
+                            'ce': ce})
 
     try:
         data = str(uuid.uuid4())
-        digest = "sha1"
-
+        digest = CONF.digest_algorithm
+        if digest == 'sha1':
+            LOG.warn('The FIPS (FEDERAL INFORMATION PROCESSING STANDARDS)'
+                     ' state that the SHA-1 is not suitable for'
+                     ' general-purpose digital signature applications (as'
+                     ' specified in FIPS 186-3) that require 112 bits of'
+                     ' security. The default value is sha1 in Kilo for a'
+                     ' smooth upgrade process, and it will be updated'
+                     ' with sha256 in next release(L).')
         out = crypto.sign(key, data, digest)
         crypto.verify(cert, out, data, digest)
-    except crypto.Error, ce:
+    except crypto.Error as ce:
         raise RuntimeError(_("There is a problem with your key pair.  "
-                             "Please verify that cert %s and key %s "
-                             "belong together.  OpenSSL error %s"
-                             % (cert_file, key_file, ce)))
+                             "Please verify that cert %(cert_file)s and "
+                             "key %(key_file)s belong together.  OpenSSL "
+                             "error %(ce)s") % {'cert_file': cert_file,
+                                                'key_file': key_file,
+                                                'ce': ce})
 
 
 def get_test_suite_socket():
-    global SIOS_TEST_SOCKET_FD_STR
-    if SIOS_TEST_SOCKET_FD_STR in os.environ:
-        fd = int(os.environ[SIOS_TEST_SOCKET_FD_STR])
+    global GLANCE_TEST_SOCKET_FD_STR
+    if GLANCE_TEST_SOCKET_FD_STR in os.environ:
+        fd = int(os.environ[GLANCE_TEST_SOCKET_FD_STR])
         sock = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
         sock = socket.SocketType(_sock=sock)
         sock.listen(CONF.backlog)
-        del os.environ[SIOS_TEST_SOCKET_FD_STR]
+        del os.environ[GLANCE_TEST_SOCKET_FD_STR]
         os.close(fd)
         return sock
     return None
 
-def read_cached_file(filename, cache_info, reload_func=None):
-    """Read from a file if it has been modified.
 
-    :param cache_info: dictionary to hold opaque cache.
-    :param reload_func: optional function to be called with data when
-                        file is reloaded due to a modification.
+def is_uuid_like(val):
+    """Returns validation of a value as a UUID.
 
-    :returns: data from file
-
+    For our purposes, a UUID is a canonical form string:
+    aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
     """
-    mtime = os.path.getmtime(filename)
-    if not cache_info or mtime != cache_info.get('mtime'):
-        LOG.debug(_("Reloading cached file %s") % filename)
-        with open(filename) as fap:
-            cache_info['data'] = fap.read()
-        cache_info['mtime'] = mtime
-        if reload_func:
-            reload_func(cache_info['data'])
-    return cache_info['data']
+    try:
+        return str(uuid.UUID(val)) == val
+    except (TypeError, ValueError, AttributeError):
+        return False
 
+
+def is_valid_hostname(hostname):
+    """Verify whether a hostname (not an FQDN) is valid."""
+    return re.match('^[a-zA-Z0-9-]+$', hostname) is not None
+
+
+def is_valid_fqdn(fqdn):
+    """Verify whether a host is a valid FQDN."""
+    return re.match('^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', fqdn) is not None
+
+
+def parse_valid_host_port(host_port):
+    """
+    Given a "host:port" string, attempts to parse it as intelligently as
+    possible to determine if it is valid. This includes IPv6 [host]:port form,
+    IPv4 ip:port form, and hostname:port or fqdn:port form.
+
+    Invalid inputs will raise a ValueError, while valid inputs will return
+    a (host, port) tuple where the port will always be of type int.
+    """
+
+    try:
+        try:
+            host, port = netutils.parse_host_port(host_port)
+        except Exception:
+            raise ValueError(_('Host and port "%s" is not valid.') % host_port)
+
+        if not netutils.is_valid_port(port):
+            raise ValueError(_('Port "%s" is not valid.') % port)
+
+        # First check for valid IPv6 and IPv4 addresses, then a generic
+        # hostname. Failing those, if the host includes a period, then this
+        # should pass a very generic FQDN check. The FQDN check for letters at
+        # the tail end will weed out any hilariously absurd IPv4 addresses.
+
+        if not (netutils.is_valid_ipv6(host) or netutils.is_valid_ipv4(host) or
+                is_valid_hostname(host) or is_valid_fqdn(host)):
+            raise ValueError(_('Host "%s" is not valid.') % host)
+
+    except Exception as ex:
+        raise ValueError(_('%s '
+                           'Please specify a host:port pair, where host is an '
+                           'IPv4 address, IPv6 address, hostname, or FQDN. If '
+                           'using an IPv6 address, enclose it in brackets '
+                           'separately from the port (i.e., '
+                           '"[fe80::a:b:c]:9876").') % ex)
+
+    return (host, int(port))
+
+
+def exception_to_str(exc):
+    try:
+        error = six.text_type(exc)
+    except UnicodeError:
+        try:
+            error = str(exc)
+        except UnicodeError:
+            error = ("Caught '%(exception)s' exception." %
+                     {"exception": exc.__class__.__name__})
+    return encodeutils.safe_encode(error, errors='ignore')
+
+
+try:
+    REGEX_4BYTE_UNICODE = re.compile(u'[\U00010000-\U0010ffff]')
+except re.error:
+    # UCS-2 build case
+    REGEX_4BYTE_UNICODE = re.compile(u'[\uD800-\uDBFF][\uDC00-\uDFFF]')
+
+
+def no_4byte_params(f):
+    """
+    Checks that no 4 byte unicode characters are allowed
+    in dicts' keys/values and string's parameters
+    """
+    def wrapper(*args, **kwargs):
+
+        def _is_match(some_str):
+            return (isinstance(some_str, unicode) and
+                    REGEX_4BYTE_UNICODE.findall(some_str) != [])
+
+        def _check_dict(data_dict):
+            # a dict of dicts has to be checked recursively
+            for key, value in data_dict.iteritems():
+                if isinstance(value, dict):
+                    _check_dict(value)
+                else:
+                    if _is_match(key):
+                        msg = _("Property names can't contain 4 byte unicode.")
+                        raise exception.Invalid(msg)
+                    if _is_match(value):
+                        msg = (_("%s can't contain 4 byte unicode characters.")
+                               % key.title())
+                        raise exception.Invalid(msg)
+
+        for data_dict in [arg for arg in args if isinstance(arg, dict)]:
+            _check_dict(data_dict)
+        # now check args for str values
+        for arg in args:
+            if _is_match(arg):
+                msg = _("Param values can't contain 4 byte unicode.")
+                raise exception.Invalid(msg)
+        # check kwargs as well, as params are passed as kwargs via
+        # registry calls
+        _check_dict(kwargs)
+        return f(*args, **kwargs)
+    return wrapper
+
+
+def stash_conf_values():
+    """
+    Make a copy of some of the current global CONF's settings.
+    Allows determining if any of these values have changed
+    when the config is reloaded.
+    """
+    conf = {}
+    conf['bind_host'] = CONF.bind_host
+    conf['bind_port'] = CONF.bind_port
+    conf['tcp_keepidle'] = CONF.cert_file
+    conf['backlog'] = CONF.backlog
+    conf['key_file'] = CONF.key_file
+    conf['cert_file'] = CONF.cert_file
+
+    return conf
+
+
+def get_search_plugins():
+    namespace = 'sios.search.index_backend'
+    ext_manager = stevedore.extension.ExtensionManager(
+        namespace, invoke_on_load=True)
+    return ext_manager.extensions
