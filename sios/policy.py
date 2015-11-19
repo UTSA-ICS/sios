@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Policy Engine For Nova"""
+"""Policy Engine For SIOS"""
 
 import copy
 
@@ -23,7 +23,6 @@ from oslo_log import log as logging
 from oslo_policy import policy
 
 from sios.common import exception
-import sios.policy.glance.domain.proxy
 from sios import i18n
 
 

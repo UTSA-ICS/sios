@@ -247,11 +247,11 @@ class RESTConnect(object):
                 datetime_expiry = timeutils.parse_isotime(expiry)
                 return (token, timeutils.normalize_time(datetime_expiry))
             except (AssertionError, KeyError):
-                self.LOG.warn(
+                LOG.warn(
                     "Unexpected response from keystone service: %s", data)
                 raise ServiceError('invalid json response')
             except (ValueError):
-                self.LOG.warn(
+                LOG.warn(
                     "Unable to parse expiration time from token: %s", data)
                 raise ServiceError('invalid json response')
     
@@ -309,10 +309,10 @@ class RESTConnect(object):
                     break
                 except Exception as e:
                     if retry == RETRIES:
-                        self.LOG.error('HTTP connection exception: %s' % e)
+                        LOG.error('HTTP connection exception: %s' % e)
                         raise ServiceError('Unable to communicate with keystone')
                     # NOTE(vish): sleep 0.5, 1, 2
-                    self.LOG.warn('Retrying on HTTP connection exception: %s' % e)
+                    LOG.warn('Retrying on HTTP connection exception: %s' % e)
                     time.sleep(2.0 ** retry / 2)
                     retry += 1
                 finally:
@@ -351,7 +351,7 @@ class RESTConnect(object):
             try:
                 data = jsonutils.loads(body)
             except ValueError:
-                self.LOG.debug('Keystone did not return json-encoded body')
+                LOG.debug('Keystone did not return json-encoded body')
                 data = {}
     
             return response, data
