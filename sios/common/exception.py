@@ -107,6 +107,8 @@ class NotAuthenticated(SiosException):
 class Forbidden(SiosException):
     message = _("You are not authorized to complete this action.")
 
+class PolicyNotAuthorized(Forbidden):
+    message = _("Policy doesn't allow %(action)s to be performed.")
 
 class ProtectedMetadefNamespaceDelete(Forbidden):
     message = _("Metadata definition namespace %(namespace)s is protected"

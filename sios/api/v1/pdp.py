@@ -70,9 +70,10 @@ class Controller(object):
             pdp_decision = self.policy_glance.enforce(req.context, req.context.action, req.context.target)
 	    LOG.debug(_('The Policy decision for action [%s] is [%s]') % (req.context.action, pdp_decision))
    	    return pdp_decision
-        except:
+        except exception:
 	    LOG.debug(_('Exception Raised for action [%s]') % req.context.action)
 	    LOG.debug(_('The Policy decision for action [%s] is [False]') % req.context.action)
+	    LOG.debug(exception)
             return False
 
     def check_glance(self, req):
@@ -85,6 +86,7 @@ class Controller(object):
         except exception:
 	    LOG.debug(_('Exception Raised for action [%s]') % req.context.action)
 	    LOG.debug(_('The Policy decision for action [%s] is [False]') % req.context.action)
+	    LOG.debug(exception)
             return False
 
     """
@@ -97,9 +99,10 @@ class Controller(object):
             pdp_decision =  self.policy_nova.enforce(req.context, req.context.action, req.context.target)
 	    LOG.debug(_('The Policy decision for action [%s] is [%s]') % (req.context.action, pdp_decision))
 	    return pdp_decision
-        except:
+        except exception:
 	    LOG.debug(_('Exception Raised for action [%s]') % req.context.action)
 	    LOG.debug(_('The Policy decision for action [%s] is [False]') % req.context.action)
+	    LOG.debug(exception)
             return False
 
 class Deserializer(wsgi.JSONRequestDeserializer):
