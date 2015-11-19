@@ -88,12 +88,6 @@ class Conflict(SiosException):
     message = _("An object with the same identifier is currently being "
                 "operated on.")
 
-
-class StorageQuotaFull(SiosException):
-    message = _("The size of the data %(image_size)s will exceed the limit. "
-                "%(remaining)s bytes remaining.")
-
-
 class AuthBadRequest(SiosException):
     message = _("Connect error/bad request to Auth service at URL %(url)s.")
 
@@ -110,20 +104,8 @@ class NotAuthenticated(SiosException):
     message = _("You are not authenticated.")
 
 
-class UploadException(SiosException):
-    message = _('Image upload problem: %s')
-
-
 class Forbidden(SiosException):
     message = _("You are not authorized to complete this action.")
-
-
-class ForbiddenPublicImage(Forbidden):
-    message = _("You are not authorized to complete this action.")
-
-
-class ProtectedImageDelete(Forbidden):
-    message = _("Image %(image_id)s is protected and cannot be deleted.")
 
 
 class ProtectedMetadefNamespaceDelete(Forbidden):
@@ -290,36 +272,6 @@ class UnsupportedHeaderFeature(SiosException):
     message = _("Provided header feature is unsupported: %(feature)s")
 
 
-class InUseByStore(SiosException):
-    message = _("The image cannot be deleted because it is in use through "
-                "the backend store outside of Sios.")
-
-
-class ImageSizeLimitExceeded(SiosException):
-    message = _("The provided image is too large.")
-
-
-class ImageMemberLimitExceeded(LimitExceeded):
-    message = _("The limit has been exceeded on the number of allowed image "
-                "members for this image. Attempted: %(attempted)s, "
-                "Maximum: %(maximum)s")
-
-
-class ImagePropertyLimitExceeded(LimitExceeded):
-    message = _("The limit has been exceeded on the number of allowed image "
-                "properties. Attempted: %(attempted)s, Maximum: %(maximum)s")
-
-
-class ImageTagLimitExceeded(LimitExceeded):
-    message = _("The limit has been exceeded on the number of allowed image "
-                "tags. Attempted: %(attempted)s, Maximum: %(maximum)s")
-
-
-class ImageLocationLimitExceeded(LimitExceeded):
-    message = _("The limit has been exceeded on the number of allowed image "
-                "locations. Attempted: %(attempted)s, Maximum: %(maximum)s")
-
-
 class SIGHUPInterrupt(SiosException):
     message = _("System SIGHUP signal received.")
 
@@ -328,47 +280,9 @@ class RPCError(SiosException):
     message = _("%(cls)s exception was raised in the last rpc call: %(val)s")
 
 
-class TaskException(SiosException):
-    message = _("An unknown task exception occurred")
-
-
-class BadTaskConfiguration(SiosException):
-    message = _("Task was not configured properly")
-
-
-class TaskNotFound(TaskException, NotFound):
-    message = _("Task with the given id %(task_id)s was not found")
-
-
-class InvalidTaskStatus(TaskException, Invalid):
-    message = _("Provided status of task is unsupported: %(status)s")
-
-
-class InvalidTaskType(TaskException, Invalid):
-    message = _("Provided type of task is unsupported: %(type)s")
-
-
-class InvalidTaskStatusTransition(TaskException, Invalid):
-    message = _("Status transition from %(cur_status)s to"
-                " %(new_status)s is not allowed")
-
-
-class DuplicateLocation(Duplicate):
-    message = _("The location %(location)s already exists")
-
-
-class ImageDataNotFound(NotFound):
-    message = _("No image data could be found")
-
-
 class InvalidParameterValue(Invalid):
     message = _("Invalid value '%(value)s' for parameter '%(param)s': "
                 "%(extra_msg)s")
-
-
-class InvalidImageStatusTransition(Invalid):
-    message = _("Image status transition from %(cur_status)s to"
-                " %(new_status)s is not allowed")
 
 
 class MetadefDuplicateNamespace(Duplicate):

@@ -19,7 +19,7 @@ import logging
 
 from oslo_utils import excutils
 
-from sios.policy.nova import exception
+from sios.common import exception
 from sios.policy.nova import policy
 
 
