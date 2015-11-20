@@ -30,8 +30,7 @@ from webob.exc import (HTTPError,
                        HTTPInternalServerError,
                        HTTPServiceUnavailable)
 from webob import Response
-from sios.policy.glance import glance
-from sios.policy.nova import nova
+from sios.api import policy
 import sios.api.v1
 from sios.common import exception
 from sios.common import utils
@@ -56,8 +55,7 @@ class Controller(object):
     """
 
     def __init__(self):
-        self.policy_glance = glance.Enforcer()
-        self.policy_nova = nova.Enforcer()
+        self.policy = policy.Enforcer()
         self.pool = eventlet.GreenPool(size=1024)
    
     """
@@ -67,7 +65,7 @@ class Controller(object):
         """Authorize an action against our policies"""
         try:
 	    LOG.debug(_('Evaluating Policy decision for action [%s]') % req.context.action)
-            pdp_decision = self.policy_glance.enforce(req.context, req.context.action, req.context.target)
+            pdp_decision = self.policy.enforce(req.context, req.context.action, req.context.target)
 	    LOG.debug(_('The Policy decision for action [%s] is [%s]') % (req.context.action, pdp_decision))
    	    return pdp_decision
         except exception:
@@ -80,7 +78,7 @@ class Controller(object):
         """Authorize an action against our policies"""
         try:
 	    LOG.debug(_('Evaluating Policy decision for action [%s]') % req.context.action)
-            pdp_decision = self.policy_glance.check(req.context, req.context.action, req.context.target)
+            pdp_decision = self.policy.check(req.context, req.context.action, req.context.target)
 	    LOG.debug(_('The Policy decision for action [%s] is [%s]') % (req.context.action, pdp_decision))
    	    return pdp_decision
         except exception:
@@ -96,7 +94,7 @@ class Controller(object):
         """Authorize an action against our policies"""
         try:
 	    LOG.debug(_('Evaluating Policy decision for action [%s]') % req.context.action)
-            pdp_decision =  self.policy_nova.enforce(req.context, req.context.action, req.context.target)
+            pdp_decision =  self.policy.enforce(req.context, req.context.action, req.context.target)
 	    LOG.debug(_('The Policy decision for action [%s] is [%s]') % (req.context.action, pdp_decision))
 	    return pdp_decision
         except exception:

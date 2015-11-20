@@ -299,7 +299,7 @@ class Enforcer(object):
            :raises: `glance.common.exception.Forbidden`
            :returns: A non-False value if access is allowed.
         """
-        headers = {'X-Auth-Token': context.auth_tok, 'X-Action': action, 'X-Target': target}
+        headers = {'X-Auth-Token': context.auth_token, 'X-Action': action, 'X-Target': target}
         response, data = self._json_request(self.sios_auth_host, self.sios_auth_port, 'POST',
                                             '/v1/pdp/enforce_glance', additional_headers=headers)
 	if (data == False):

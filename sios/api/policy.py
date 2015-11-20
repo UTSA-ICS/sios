@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Policy Engine For Sios"""
+"""Policy Engine For SIOS"""
 
 import copy
 
@@ -26,8 +26,10 @@ from sios.common import exception
 from sios import i18n
 
 
-LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
+LOG = logging.getLogger(__name__)
+
+CONF.oslo_policy.policy_file = "policy.json"
 
 DEFAULT_RULES = policy.Rules.from_dict({
     'context_is_admin': 'role:admin',
@@ -60,7 +62,7 @@ class Enforcer(policy.Enforcer):
            :param context: Sios request context
            :param action: String representing the action to be checked
            :param target: Dictionary representing the object of the action.
-           :raises: `sios.common.exception.Forbidden`
+           :raises: `glance.common.exception.Forbidden`
            :returns: A non-False value if access is allowed.
         """
         credentials = {
@@ -96,6 +98,4 @@ class Enforcer(policy.Enforcer):
            :returns: A non-False value if context role is admin.
         """
         return self.check(context, 'context_is_admin', context.to_dict())
-
-
 
