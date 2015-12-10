@@ -32,7 +32,8 @@ wget -O /opt/stack/glance/glance/api/policy.py https://raw.github.com/fpatwa/sio
 wget -O /opt/stack/nova/nova/policy.py https://raw.github.com/fpatwa/sios/master/external_service_policy_files/nova/policy.py<br>
 7.) To start the SIOS service run the following commands:<br>
 cd /opt/stack; sudo pip install -e sios<br>
-cd /opt/stack/sios; /opt/stack/sios/bin/sios-api --config-file=/etc/sios/sios-api.conf || touch "/opt/stack/status/stack/sios-api.failure"<br>
+cd /opt/stack/sios/bin<br>
+./start_sios_screen.sh<br>
 8.) Restart nova api and glance api services (from screen)<br>
 
 To Test Usage:
